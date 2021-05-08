@@ -1,0 +1,26 @@
+version: '2.2'
+
+services:
+  dev_host:
+    container_name: dev_host
+    image: rlyown/cdev_host
+    security_opt: # options needed for gdb debugging
+      - seccomp:unconfined
+      - apparmor:unconfined
+    ports: 
+      - 36000:36000  # ssh
+      - 1234:1234  # gdb server
+    volumes:
+      - .:/home/bingo/Workdir
+    privileged: true
+
+#    networks:
+#      extnetwork:
+#        ipv4_address: 172.19.0.2
+#
+#networks:
+#  extnetwork:
+#    ipam:
+#      config:
+#        - subnet: 172.19.0.0/16
+#          gateway: 172.19.0.1
