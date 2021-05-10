@@ -8,7 +8,7 @@ set(CMAKE_CXX_FLAGS "$ENV{CXXFLAGS} -rdynamic -O0 -g -Wall -Wno-deprecated -Werr
 
 set(LIB_SRC
         mocker/log.cpp
-    )
+        mocker/util.cpp)
 
 add_library(mocker SHARED ${LIB_SRC})
 #add_library(mocker_static STATIC ${LIB_SRC})

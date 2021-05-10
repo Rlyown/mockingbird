@@ -4,21 +4,51 @@
 
 #include "log.h"
 #include <tuple>
-#include <map>
 #include <functional>
 #include <iostream>
 #include <ctime>
 #include <cstring>
+#include <utility>
 
 namespace mocker {
     ////////////////////////////////////////////////////////////////////
     /// LogEvent
     ////////////////////////////////////////////////////////////////////
-    LogEvent::LogEvent(const char *file, int32_t line, uint32_t elapse, uint32_t threadId, uint32_t fiberId,
-                       uint64_t time)
-                       : m_file(file), m_line(line), m_elapse(elapse),
-                       m_threadId(threadId), m_fiberId(fiberId), m_time(time) {
+    LogEvent::LogEvent(const char *file, int32_t line, uint32_t elapse,
+                       uint32_t threadId, uint32_t fiberId, uint64_t time)
+            : m_file(file), m_line(line), m_elapse(elapse),
+              m_threadId(threadId), m_fiberId(fiberId), m_time(time) {
 
+    }
+
+    LogEvent::~LogEvent() {
+
+    }
+
+    void LogEvent::format(const char *fmt, ...) {
+        va_list al;
+        va_start(al, fmt);
+        format(fmt, al);
+        va_end(al);
+    }
+
+    void LogEvent::format(const char *fmt, va_list al) {
+        char *buf = nullptr;
+        int len = vasprintf(&buf, fmt, al);
+        if (len != -1) {
+            m_ss << std::string(buf, len);
+            free(buf);
+        }
+
+    }
+
+    LogEventWrapper::LogEventWrapper(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event)
+            : m_logger(std::move(logger)), m_level(level), m_event(std::move(event)){
+
+    }
+
+    LogEventWrapper::~LogEventWrapper() {
+            m_logger->log(m_level, m_event);
     }
 
 
@@ -390,6 +420,13 @@ namespace mocker {
     ////////////////////////////////////////////////////////////////////
     /// LogAppender
     ////////////////////////////////////////////////////////////////////
+    LogAppender::LogAppender(LogLevel::Level level) : m_level(level) {
+
+    }
+
+
+    StdoutLogAppender::StdoutLogAppender(LogLevel::Level level) : LogAppender(level) {}
+
     void StdoutLogAppender::log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) {
         if (level >= m_level) {
             std::cout << m_formatter->format(logger, level, event);
@@ -397,8 +434,13 @@ namespace mocker {
     }
 
 
-    FileLogAppender::FileLogAppender(const std::string &filename) : m_filename(filename) {
+    FileLogAppender::FileLogAppender(const std::string &filename, LogLevel::Level level)
+            : LogAppender(level), m_filename(filename) {
+        m_filestream.open(m_filename);
+    }
 
+    FileLogAppender::~FileLogAppender() {
+        m_filestream.close();
     }
 
     void FileLogAppender::log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) {
@@ -419,6 +461,23 @@ namespace mocker {
         return !!m_filestream;
     }
 
+
+    ////////////////////////////////////////////////////////////////////
+    /// LogManager
+    ////////////////////////////////////////////////////////////////////
+    LogManager::LogManager() {
+        m_root.reset(new Logger);
+        m_root->addAppender(LogAppender::ptr(new StdoutLogAppender(m_root->getLevel())));
+    }
+
+    Logger::ptr LogManager::getLogger(const std::string &name) {
+        auto it = m_loggers.find(name);
+        return it == m_loggers.end()? m_root : it->second;
+    }
+
+    void LogManager::init() {
+
+    }
 
 
 } /* namespace mocker */
