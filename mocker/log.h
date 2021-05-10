@@ -2,11 +2,11 @@
 // Created by ChaosChen on 2021/5/8.
 //
 
-#ifndef __MOCKER_LOG_H__
-#define __MOCKER_LOG_H__
+#ifndef MOCKER_LOG_H
+#define MOCKER_LOG_H
 
 #include <string>
-#include <stdint.h>
+#include <cstdint>
 #include <memory>
 #include <list>
 #include <sstream>  // stringstream
@@ -23,15 +23,16 @@ namespace mocker {
     class LogEvent {
     public:
         typedef std::shared_ptr<LogEvent> ptr;
-        LogEvent();
+        LogEvent(const char * file, int32_t line, uint32_t elapse, uint32_t threadId, uint32_t fiberId, uint64_t time);
 
         const char * getFile() const { return m_file; }
         int32_t getLine() const { return m_line; }
         uint32_t getElapse() const { return m_elapse; }
         uint32_t getThreadId() const { return m_threadId; }
-        uint32_t getFiberId() const { return m_time; }
+        uint32_t getFiberId() const { return m_fiberId; }
         uint64_t getTime() const { return m_time; }
-        const std::string& getContent() const { return m_content; }
+        std::string getContent() const { return m_ss.str(); }
+        std::stringstream& getSS() { return m_ss; }
 
     private:
         const char * m_file = nullptr;      // 文件名
@@ -40,8 +41,7 @@ namespace mocker {
         uint32_t m_threadId = 0;            // 线程id
         uint32_t m_fiberId = 0;             // 协程id
         uint64_t m_time = 0;                // 时间戳
-        std::string m_content;
-
+        std::stringstream m_ss;
     };
 
 
@@ -66,7 +66,7 @@ namespace mocker {
     public:
         typedef std::shared_ptr<LogFormatter> ptr;
 
-        LogFormatter(std::string& pattern);
+        LogFormatter(std::string  pattern);
 
         std::string format(std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event);
 
@@ -74,7 +74,6 @@ namespace mocker {
         class FormatItem {
         public:
             typedef std::shared_ptr<LogFormatter::FormatItem> ptr;
-            FormatItem(const std::string& fmt = "") {}
             virtual ~FormatItem() {}
             virtual void format(std::ostream& os, std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) = 0;
         };
@@ -88,105 +87,6 @@ namespace mocker {
     };
 
 
-    class MessageFormatItem: public LogFormatter::FormatItem {
-    public:
-        void format(std::ostream& os, std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) override {
-            os << event->getContent();
-        }
-    };
-
-
-    class LevelFormatItem: public LogFormatter::FormatItem {
-    public:
-        void format(std::ostream& os, std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) override {
-            os << LogLevel::ToString(level);
-        }
-    };
-
-
-    class ElapseFormatItem: public LogFormatter::FormatItem {
-    public:
-        void format(std::ostream& os, std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) override {
-            os << event->getElapse();
-        }
-    };
-
-
-    class NameFormatItem: public LogFormatter::FormatItem {
-    public:
-        void format(std::ostream& os, std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) override {
-            os << logger->getName();
-        }
-    };
-
-
-    class ThreadIdFormatItem: public LogFormatter::FormatItem {
-    public:
-        void format(std::ostream& os, std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) override {
-            os << event->getThreadId();
-        }
-    };
-
-
-    class FiberIdFormatItem: public LogFormatter::FormatItem {
-    public:
-        void format(std::ostream& os, std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) override {
-            os << event->getFiberId();
-        }
-    };
-
-
-    class DateTimeFormatItem: public LogFormatter::FormatItem {
-    public:
-        DateTimeFormatItem(const std::string& format = "%Y:%m:%d %H:%M:%S") : m_format(format) {
-
-        }
-
-        void format(std::ostream& os, std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) override {
-            os << event->getTime();
-        }
-
-    private:
-        std::string m_format;
-
-    };
-
-
-    class FilenameFormatItem: public LogFormatter::FormatItem {
-    public:
-        void format(std::ostream& os, std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) override {
-            os << event->getFile();
-        }
-    };
-
-
-    class LineFormatItem: public LogFormatter::FormatItem {
-    public:
-        void format(std::ostream& os, std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) override {
-            os << event->getLine();
-        }
-    };
-
-
-    class NewLineFormatItem: public LogFormatter::FormatItem {
-    public:
-        void format(std::ostream& os, std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) override {
-            os << std::endl;
-        }
-    };
-
-
-    class StringFormatItem: public LogFormatter::FormatItem {
-    public:
-        StringFormatItem(const std:: string& str) : m_string(str) {}
-
-        void format(std::ostream& os, std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) override {
-            os << m_string;
-        }
-
-    private:
-        std::string m_string;
-    };
 
 
     // 日志输出地
@@ -202,13 +102,13 @@ namespace mocker {
         void setFormatter(LogFormatter::ptr val) { m_formatter = val; }
         LogFormatter::ptr getFormatter() const { return m_formatter; }
     protected:
-        LogLevel::Level m_level;
+        LogLevel::Level m_level = LogLevel::DEBUG;
         LogFormatter::ptr m_formatter;
     };
 
 
     // 日志器
-    class Logger {
+    class Logger : public std::enable_shared_from_this<Logger>{
     public:
         typedef std::shared_ptr<Logger> ptr;
 
@@ -230,9 +130,10 @@ namespace mocker {
 
         const std::string& getName() const { return m_name; }
     private:
-        LogLevel::Level m_level;                    // 日志级别
         std::string m_name;                         // 日志名称
+        LogLevel::Level m_level;                    // 日志级别
         std::list<LogAppender::ptr> m_appenders;    // 日志输出集合
+        LogFormatter::ptr m_formatter;
     };
 
 
@@ -241,7 +142,7 @@ namespace mocker {
     public:
         typedef std::shared_ptr<StdoutLogAppender> ptr;
 
-        void log(std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) override;  // override指明是重载的方法
+        void log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override;  // override指明是重载的方法
     };
 
 
@@ -251,7 +152,7 @@ namespace mocker {
         typedef std::shared_ptr<FileLogAppender> ptr;
 
         FileLogAppender(const std::string& filename);
-        void log(std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) override;
+        void log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override;
 
         bool reopen();
     private:
@@ -261,5 +162,5 @@ namespace mocker {
 }  /* namespace mocker */
 
 
-#endif /* __MOCKER_LOG_H__ */
+#endif //MOCKER_LOG_H
 

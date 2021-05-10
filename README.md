@@ -13,7 +13,7 @@
 ├── Makefile
 ├── README.md
 ├── bin                         -- 二进制
-├── build                       -- 中间文件路径
+├── cmake-build-debug           -- 中间文件路径
 ├── cmake                       -- cmake函数文件夹
 ├── docker-compose.yml          -- 编译环境
 ├── lib                         -- 库的输出路径

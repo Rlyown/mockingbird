@@ -5,8 +5,22 @@
 #include "log.h"
 #include <tuple>
 #include <map>
+#include <functional>
+#include <iostream>
+#include <ctime>
+#include <cstring>
 
 namespace mocker {
+    ////////////////////////////////////////////////////////////////////
+    /// LogEvent
+    ////////////////////////////////////////////////////////////////////
+    LogEvent::LogEvent(const char *file, int32_t line, uint32_t elapse, uint32_t threadId, uint32_t fiberId,
+                       uint64_t time)
+                       : m_file(file), m_line(line), m_elapse(elapse),
+                       m_threadId(threadId), m_fiberId(fiberId), m_time(time) {
+
+    }
+
 
     ////////////////////////////////////////////////////////////////////
     /// LogLevel
@@ -29,21 +43,147 @@ namespace mocker {
             return "UNKNOWN";
         }
 
-        return "UNKNOWN"
+        return "UNKNOWN";
 
     }
 
     ////////////////////////////////////////////////////////////////////
     /// LogFormatter
     ////////////////////////////////////////////////////////////////////
-    LogFormatter::LogFormatter(std::string &pattern) : m_pattern(pattern) {
+    class MessageFormatItem: public LogFormatter::FormatItem {
+    public:
+        MessageFormatItem(const std::string&str = "") {}
+        void format(std::ostream& os, Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override {
+            os << event->getContent();
+        }
+    };
 
+
+    class LevelFormatItem: public LogFormatter::FormatItem {
+    public:
+        LevelFormatItem(const std::string&str = "") {}
+        void format(std::ostream& os, Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override {
+            os << LogLevel::ToString(level);
+        }
+    };
+
+
+    class ElapseFormatItem: public LogFormatter::FormatItem {
+    public:
+        ElapseFormatItem(const std::string&str = "") {}
+        void format(std::ostream& os, Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override {
+            os << event->getElapse();
+        }
+    };
+
+
+    class NameFormatItem: public LogFormatter::FormatItem {
+    public:
+        NameFormatItem(const std::string&str = "") {}
+        void format(std::ostream& os, Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override {
+            os << logger->getName();
+        }
+    };
+
+
+    class ThreadIdFormatItem: public LogFormatter::FormatItem {
+    public:
+        ThreadIdFormatItem(const std::string&str = "") {}
+        void format(std::ostream& os, Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override {
+            os << event->getThreadId();
+        }
+    };
+
+
+    class FiberIdFormatItem: public LogFormatter::FormatItem {
+    public:
+        FiberIdFormatItem(const std::string&str = "") {}
+        void format(std::ostream& os, Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override {
+            os << event->getFiberId();
+        }
+    };
+
+
+    class DateTimeFormatItem: public LogFormatter::FormatItem {
+    public:
+        DateTimeFormatItem(const std::string& format = "%Y-%m-%d %H:%M:%S") : m_format(format) {
+            if (m_format.empty()) {
+                m_format = "%Y-%m-%d %H:%M:%S";
+            }
+        }
+
+        void format(std::ostream& os, Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override {
+            struct tm tp{};
+            time_t timer = event->getTime();
+            localtime_r(&timer, &tp);
+            char buf[64];
+            strftime(buf, sizeof(buf), m_format.c_str(), &tp);
+
+            os << buf;
+        }
+
+    private:
+        std::string m_format;
+    };
+
+
+    class FilenameFormatItem: public LogFormatter::FormatItem {
+    public:
+        FilenameFormatItem(const std::string&str = "") {}
+        void format(std::ostream& os, Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override {
+            os << event->getFile();
+        }
+    };
+
+
+    class LineFormatItem: public LogFormatter::FormatItem {
+    public:
+        LineFormatItem(const std::string&str = "") {}
+        void format(std::ostream& os, Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override {
+            os << event->getLine();
+        }
+    };
+
+
+    class NewLineFormatItem: public LogFormatter::FormatItem {
+    public:
+        NewLineFormatItem(const std::string&str = "") {}
+        void format(std::ostream& os, Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override {
+            os << std::endl;
+        }
+    };
+
+
+    class TabFormatItem: public LogFormatter::FormatItem {
+    public:
+        TabFormatItem(const std::string&str = "") {}
+        void format(std::ostream& os, Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override {
+            os << "\t";
+        }
+    };
+
+
+    class StringFormatItem: public LogFormatter::FormatItem {
+    public:
+        StringFormatItem(const std:: string& str) : m_string(str) {}
+
+        void format(std::ostream& os, Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override {
+            os << m_string;
+        }
+
+    private:
+        std::string m_string;
+    };
+
+
+    LogFormatter::LogFormatter(std::string pattern) : m_pattern(std::move(pattern)) {
+        init();
     }
 
-    std::string LogFormatter::format(std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) {
+    std::string LogFormatter::format(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) {
         std::stringstream ss;
         for (auto& i : m_items) {
-            i->format(ss, event);
+            i->format(ss, logger, level, event);
         }
         return ss.str();
     }
@@ -69,50 +209,75 @@ namespace mocker {
                 }
             }
 
-            size_t n = i + 1;
+            size_t j = i + 1;
             int fmt_status = 0;  // 初始状态 -- 无状态
             size_t fmt_begin = 0;
 
             std::string fmt_str;
             std::string fmt;
-            while (n < m_pattern.size()) {
-                if (isspace(m_pattern[n])) {
-                    break;
-                }
 
-                if (fmt_status == 0) {
-                    if (m_pattern[n] == '{') {
-                        fmt_str = m_pattern.substr(i + 1, n - i);
-                        fmt_status = 1;  // 解析格式
-                        fmt_begin = n;
-                        ++n;
-                        continue;
-                    }
-                }
-                if (fmt_status == 1) {
-                    if (m_pattern[n] == '}') {
-                        fmt = m_pattern.substr(fmt_begin + 1, n - fmt_begin - 1);
-                        fmt_status = 2;
+            bool break_while_flag = false;
+            while (j < m_pattern.size()) {
+                switch (fmt_status) {
+                    /*
+                     * char        xxx{yyy}
+                     * cur_status  01112333
+                     * next_status 11123334
+                     */
+                    case 0:
+                    case 1: {
+                        if (isalpha(m_pattern[j])) {
+                            fmt_status = 1;
+                            if (j + 1 == m_pattern.size()) {
+                                // 处理最后一个格式字符
+                                fmt_str = m_pattern.substr(i + 1, j - i + 1);
+                            }
+                        } else if (m_pattern[j] == '{') {
+                            fmt_status = 2;
+                            fmt_str = m_pattern.substr(i + 1, j - i - 1);
+                        } else {
+                            // 遇到非字母则终止
+                            fmt_str = m_pattern.substr(i + 1, j - i - 1);
+                            break_while_flag = true;
+                            --j;
+                        }
                         break;
                     }
+                    case 2: {
+                        fmt_begin = j;
+                        fmt_status = 3;
+                        break;
+                    }
+                    case 3: {
+                        if (m_pattern[j] == '}') {
+                            fmt_status = 4;
+                            fmt = m_pattern.substr(fmt_begin, j - fmt_begin);
+                            break_while_flag = true;
+                        }
+                        break;
+                    }
+                    default:
+                        break;
+                }
+
+                ++j;
+
+                // 提前结束while
+                if (break_while_flag) {
+                    break;
                 }
             }
 
-            if (fmt_status == 0) {
+            if (fmt_status == 1 || fmt_status == 4) {
                 if (!nstr.empty()) {
                     vec.push_back(std::make_tuple(nstr, "", 0));
+                    nstr.clear();
                 }
-                fmt_str = m_pattern.substr(i + 1, n - i - 1);
-                vec.push_back(std::make_tuple(str, fmt, 1));
-            } else if (fmt_status == 1) {
-                std::cout << "pattern parse error: " << m_pattern << " - " << m_pattern.substr(i) << std::endl;
+                vec.push_back(std::make_tuple(fmt_str, fmt, 1));
+                i = j - 1;  // 由于for循环会执行i++，因此这里需要-1
+            } else {
+//                std::cout << "pattern parse error: {" << m_pattern << "} - {" << m_pattern.substr(i) << "}" << std::endl;
                 vec.push_back(std::make_tuple("<<pattern_error>>", fmt, 1));
-            } else if (fmt_status == 2) {
-                if (!nstr.empty()) {
-                    vec.push_back(std::make_tuple(nstr, "", 0));
-                }
-                vec.push_back(std::make_tuple(str, fmt, 1));
-                i = n;
             }
         }
 
@@ -130,6 +295,7 @@ namespace mocker {
          * %d -- time
          * %f -- filename
          * %l -- line number
+         * %T -- tab
          */
         static std::map<std::string, std::function<FormatItem::ptr(const std::string& str)>> s_format_items = {
 #define XX(str, C) \
@@ -143,7 +309,9 @@ namespace mocker {
         XX(n, NewLineFormatItem),
         XX(d, DateTimeFormatItem),
         XX(f, FilenameFormatItem),
-        XX(l, LineFormatItem)
+        XX(l, LineFormatItem),
+        XX(T, TabFormatItem),
+        XX(F, FiberIdFormatItem)
 
 #undef XX
         };
@@ -160,24 +328,23 @@ namespace mocker {
                 }
             }
 
-            std::cout << std::get<0>(i) << " - " << std::get<1>(i) << " - " << std::get<2>(i) << std::endl;
+//            std::cout << "{" << std::get<0>(i) << "} - {" << std::get<1>(i) << "} - {" << std::get<2>(i) << "}" << std::endl;
         }
     }
-
-
 
 
     ////////////////////////////////////////////////////////////////////
     /// Logger
     ////////////////////////////////////////////////////////////////////
-    Logger::Logger(const std::string &name) : m_name(name) {
-
+    Logger::Logger(const std::string &name) : m_name(name), m_level(LogLevel::DEBUG) {
+        m_formatter.reset(new LogFormatter("%d{%Y-%m-%d %H:%M:%S}%T%t%T%F%T[%p]%T[%c]%T%f:%l%T%m%n"));
     }
 
     void Logger::log(LogLevel::Level level, LogEvent::ptr event) {
         if (level >= m_level) {
+            auto self = shared_from_this();
             for (auto& i : m_appenders) {
-                i->log(level, event);
+                i->log(self, level, event);
             }
         }
     }
@@ -204,12 +371,15 @@ namespace mocker {
 
     void Logger::addAppender(LogAppender::ptr appender) {
         /* 暂不考虑线程安全 */
+        if (!appender->getFormatter()) {
+            appender->setFormatter(m_formatter);
+        }
         m_appenders.push_back(appender);
     }
 
     void Logger::delAppender(LogAppender::ptr appender) {
         for (auto it = m_appenders.begin(); it != m_appenders.end(); ++it) {
-            if (it == appender) {
+            if (*it == appender) {
                 m_appenders.erase(it);
                 break;
             }
@@ -220,7 +390,7 @@ namespace mocker {
     ////////////////////////////////////////////////////////////////////
     /// LogAppender
     ////////////////////////////////////////////////////////////////////
-    void StdoutLogAppender::log(std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) {
+    void StdoutLogAppender::log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) {
         if (level >= m_level) {
             std::cout << m_formatter->format(logger, level, event);
         }
@@ -231,7 +401,7 @@ namespace mocker {
 
     }
 
-    void FileLogAppender::log(std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) {
+    void FileLogAppender::log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) {
         if (level >= m_level) {
             m_filestream << m_formatter->format(logger, level, event);
         }
@@ -248,7 +418,6 @@ namespace mocker {
         m_filestream.open(m_filename);
         return !!m_filestream;
     }
-
 
 
 

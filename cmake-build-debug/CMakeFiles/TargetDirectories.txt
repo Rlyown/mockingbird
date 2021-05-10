@@ -1,2 +1,0 @@
-/Users/chaoschen/GitProject/C++WebServer/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/Users/chaoschen/GitProject/C++WebServer/cmake-build-debug/CMakeFiles/edit_cache.dir
