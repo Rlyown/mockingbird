@@ -2,6 +2,6 @@
 .DS_Store
 .clion.source.upload.marker
 cmake-build-remote
-bin
-build
-lib/libmocker.so
+
+
+
