@@ -198,6 +198,7 @@ namespace mocker {
         Logger::ptr getLogger(const std::string& name);
 
         void init();
+        Logger::ptr getRoot() const { return m_root; }
     private:
         std::map<std::string, Logger::ptr> m_loggers;
         Logger::ptr m_root;
@@ -235,6 +236,7 @@ namespace mocker {
 #define MOCKER_LOG_FMT_ERROR(logger, fmt, ...) MOCKER_LOG_FMT_LEVEL(logger, mocker::LogLevel::ERROR, fmt, __VA_ARGS__)
 #define MOCKER_LOG_FMT_FATAL(logger, fmt, ...) MOCKER_LOG_FMT_LEVEL(logger, mocker::LogLevel::FATAL, fmt, __VA_ARGS__)
 
+#define MOCKER_LOG_ROOT() mocker::LoggerMgr::GetInstance()->getRoot()
 
 #endif //MOCKER_LOG_H
 

@@ -3,8 +3,9 @@
 //
 
 #include <iostream>
-#include "../mocker/log.h"
-#include "../mocker/util.h"
+#include "mocker/log.h"
+#include "mocker/util.h"
+
 
 int main(int argc, char *argv[]) {
     mocker::Logger::ptr logger(new mocker::Logger);

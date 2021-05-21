@@ -5,6 +5,10 @@
 * gcc 9.3.0
 * cmake 3.16.3
 
+相关软件包：
+* libboost-dev
+* yaml-cpp
+
 ## 项目路径
 
 ```
@@ -31,6 +35,10 @@ Logger (定义日志级别)
     |
 Appender (日志输出)
 ```
+
+## 配置系统
+
+Config --> Yaml
 
 ## 协程库封装
 

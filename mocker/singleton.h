@@ -8,7 +8,7 @@
 #include <memory>
 
 namespace mocker {
-    template<typename T, typename X = void, int N = 0>
+    template<class T, class X = void, int N = 0>
     class Singleton {
     public:
         static T* GetInstance() {
@@ -19,7 +19,7 @@ namespace mocker {
     private:
     };
 
-    template<typename T, typename X = void, int N = 0>
+    template<class T, class X = void, int N = 0>
     class SingletonPtr {
     public:
         static std::shared_ptr<T> GetInstance() {
