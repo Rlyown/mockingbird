@@ -3,15 +3,19 @@
 //
 
 
+#include <vector>
 #include <yaml-cpp/yaml.h>
-#include "mocker/config.h"
-#include "mocker/log.h"
+#include <mocker/config.h>
+#include <mocker/log.h>
 
 mocker::ConfigVar<int>::ptr g_int_value_config =
         mocker::Config::lookup("system.port", (int)8080, "system port");
 
 mocker::ConfigVar<float>::ptr g_float_value_config =
         mocker::Config::lookup("system.value", (float)10.12f, "system port");
+
+mocker::ConfigVar<std::vector<int>>::ptr g_int_vec_value_config =
+        mocker::Config::lookup("system.int_vec", std::vector<int>{1, 2}, "system int vec");
 
 void print_yaml(const YAML::Node& node, int level) {
     if (node.IsScalar()) {
@@ -34,17 +38,30 @@ void print_yaml(const YAML::Node& node, int level) {
 void test_yaml() {
     YAML::Node root = YAML::LoadFile("../bin/conf/log.yml");
     print_yaml(root, 0);
-//    MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << root;
+    MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << root.Scalar();
 
 }
 
+void test_config() {
+    MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "Before: " << g_int_value_config->getValue();
+    MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "Before: " << g_float_value_config->getValue();
+    for (auto& i : g_int_vec_value_config->getValue()) {
+        MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "before int_vec: " << i;
+    }
+
+    YAML::Node root = YAML::LoadFile("../bin/conf/log.yml");
+    mocker::Config::loadFromYaml(root);
+
+    MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "After: " << g_int_value_config->getValue();
+    MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "After: " << g_float_value_config->getValue();
+    for (auto& i : g_int_vec_value_config->getValue()) {
+        MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "before int_vec: " << i;
+    }
+    MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << g_int_vec_value_config->toString();
+}
+
 int main(int argc, char *argv[]) {
-    MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << g_int_value_config->getValue();
-    MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << g_int_value_config->toString();
+    test_config();
 
-    MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << g_float_value_config->getValue();
-    MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << g_float_value_config->toString();
-
-    test_yaml();
     return 0;
 }

@@ -15,8 +15,8 @@
 #include <ostream>
 #include <cstdarg>
 #include <map>
-#include "util.h"
-#include "singleton.h"
+#include <mocker/util.h>
+#include <mocker/singleton.h>
 
 
 namespace mocker {
