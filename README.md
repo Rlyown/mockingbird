@@ -41,6 +41,23 @@ Appender (日志输出)
 Config --> Yaml
 
 配置系统原则：约定优于配置
+```c++
+template<T, FromStr, ToStr>
+class ConfigVar;
+
+template<F, T>
+LexicalCast;
+
+// STL支持
+// 目前支持：vector, list, set, map, unordered_set, unordered_map
+// (unordered_)map/set仅支持key = std::string
+// Config::lookup key相同但类型不同的，会报错
+// 所有的配置名需均为小写
+```
+
+自定义类型，需要实现mocker::LexicalCast特化
+实现后，就可以支持Config解析自定义类型，自定义类型可以和常规STL容器一起使用
+
 
 ## 协程库封装
 

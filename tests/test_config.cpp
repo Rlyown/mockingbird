@@ -4,12 +4,18 @@
 
 
 #include <vector>
+#include <map>
 #include <yaml-cpp/yaml.h>
 #include <mocker/config.h>
 #include <mocker/log.h>
 
+
 mocker::ConfigVar<int>::ptr g_int_value_config =
         mocker::Config::lookup("system.port", (int)8080, "system port");
+
+// type error
+//mocker::ConfigVar<float>::ptr g_int_value_error_config =
+//        mocker::Config::lookup("system.port", (float)8080, "system port");
 
 mocker::ConfigVar<float>::ptr g_float_value_config =
         mocker::Config::lookup("system.value", (float)10.12f, "system port");
@@ -27,10 +33,10 @@ mocker::ConfigVar<std::unordered_set<int>>::ptr g_int_uset_value_config =
         mocker::Config::lookup("system.int_uset", std::unordered_set<int>{1, 2}, "system int uset");
 
 mocker::ConfigVar<std::map<std::string, int>>::ptr g_int_map_value_config =
-        mocker::Config::lookup("system.int_map", std::map<std::string, int>{{"A", 2}, {"B", 3}}, "system int map");
+        mocker::Config::lookup("system.int_map", std::map<std::string, int>{{"a", 2}, {"b", 3}}, "system int map");
 
 mocker::ConfigVar<std::unordered_map<std::string, int>>::ptr g_int_umap_value_config =
-        mocker::Config::lookup("system.int_umap", std::unordered_map<std::string, int>{{"A", 2}, {"B", 3}}, "system int umap");
+        mocker::Config::lookup("system.int_umap", std::unordered_map<std::string, int>{{"a", 2}, {"b", 3}}, "system int umap");
 
 
 void print_yaml(const YAML::Node& node, int level) {
@@ -102,8 +108,90 @@ void test_config() {
 #undef XX
 }
 
+class Person {
+public:
+    std::string m_name = "null";
+    int m_age = 0;
+    bool m_sex = 0;
+
+    std::string toString() const {
+        std::stringstream ss;
+        ss << "[Person name=" << m_name
+            << " age=" << m_age
+            << " sex=" << m_sex
+            << "]";
+        return ss.str();
+    }
+};
+
+namespace mocker {
+    template<>
+    class LexicalCast<std::string, Person> {
+    public:
+        Person operator() (const std::string& v) {
+            YAML::Node node = YAML::Load(v);
+            std::stringstream ss;
+            Person p;
+            p.m_name = node["name"].as<std::string>();
+            p.m_age = node["age"].as<int>();
+            p.m_sex= node["sex"].as<bool>();
+            return p;
+        }
+    };
+
+    template<>
+    class LexicalCast<Person, std::string> {
+    public:
+        std::string operator()(const Person &p) {
+            YAML::Node node;
+            node["name"] = p.m_name;
+            node["age"] = p.m_age;
+            node["sex"] = p.m_sex;
+            std::stringstream ss;
+            ss << node;
+            return ss.str();
+        }
+    };
+}
+
+mocker::ConfigVar<Person>::ptr g_person =
+        mocker::Config::lookup("class.person", Person(), "system person");
+
+mocker::ConfigVar<std::map<std::string, Person>>::ptr g_person_map =
+        mocker::Config::lookup("class.map", std::map<std::string, Person>(), "system person");
+
+mocker::ConfigVar<std::map<std::string, std::vector<Person>>>::ptr g_person_map_vec =
+        mocker::Config::lookup("class.map_vec", std::map<std::string, std::vector<Person>>(), "system person");
+
+void test_class() {
+    MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "before: " << g_person->getValue().toString() << " - " << g_person->toString();
+
+#define XX_PM(g_var, prefix) \
+    { \
+        auto m = g_var->getValue(); \
+        for (auto& i : m) { \
+            MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << prefix << ": " << i.first << " - " << i.second.toString(); \
+        } \
+        MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << prefix << ": size=" << m.size(); \
+    }
+
+    XX_PM(g_person_map, "class.map before");
+
+    MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "before: " << g_person_map_vec->toString();
+
+    YAML::Node root = YAML::LoadFile("../bin/conf/log.yml");
+    mocker::Config::loadFromYaml(root);
+
+    MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "after: " << g_person->getValue().toString() << " - " << g_person->toString();
+    XX_PM(g_person_map, "class.map after");
+
+    MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "after: " << g_person_map_vec->toString();
+#undef XX_PM
+}
 int main(int argc, char *argv[]) {
-    test_config();
+//    test_yaml();
+//    test_config();
+    test_class();
 
     return 0;
 }

@@ -35,6 +35,7 @@ namespace mocker {
 
         virtual std::string toString() = 0;
         virtual bool fromString(const std::string& val) = 0;
+        virtual std::string getTypeName() const = 0;
 
     protected:
         std::string m_name;
@@ -334,6 +335,8 @@ namespace mocker {
 
         const T getValue() const { return m_val; }
         void setValue(const T& v) { m_val = v; }
+
+        std::string getTypeName() const override { return typeid(T).name(); }
     private:
         T m_val;
     };
@@ -347,10 +350,19 @@ namespace mocker {
         static typename ConfigVar<T>::ptr lookup(const std::string& name,
                                                  const T& default_value,
                                                  const std::string& description = "") {
-            auto tmp = lookup<T>(name);
-            if (tmp) {
-                MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "Lookup name=" << name << " exists";
-                return tmp;
+
+            auto it = s_data.find(name);
+            if (it != s_data.end()) {
+                auto tmp = std::dynamic_pointer_cast<ConfigVar<T>>(it->second);
+                if (tmp) {
+                    MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "Lookup name=" << name << " exists";
+                    return tmp;
+                } else {
+                    MOCKER_LOG_ERROR(MOCKER_LOG_ROOT()) << "Lookup name=" << name << " exists but type not "
+                            << typeid(T).name() << " real_type=" << it->second->getTypeName()
+                            << " " << it->second->toString();
+                    return nullptr;
+                }
             }
 
             if (name.find_first_not_of("abcdefghijklmnopqrstuvwxyz._0123456789") != std::string::npos) {

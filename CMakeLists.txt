@@ -20,7 +20,7 @@ add_library(mocker SHARED ${LIB_SRC})
 # add test
 add_executable(test_log tests/test_log.cpp)
 add_dependencies(test_log mocker)
-target_link_libraries(test_log mocker)
+target_link_libraries(test_log mocker yaml-cpp)
 
 add_executable(test_config tests/test_config.cpp)
 add_dependencies(test_config mocker)
