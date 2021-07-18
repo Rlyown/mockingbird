@@ -1,65 +1,286 @@
 
-## 开发环境
+## Develop Environment
 
 * Ubuntu 20.04
 * gcc 9.3.0
 * cmake 3.16.3
-
-相关软件包：
 * libboost-dev
 * yaml-cpp
 
-## 项目路径
+## Project Directory
 
 ```
 .
-├── CMakeLists.txt              -- cmake定义文件
+├── CMakeLists.txt              -- cmake file
 ├── Makefile
 ├── README.md
-├── bin                         -- 二进制
-├── cmake-build-debug           -- 中间文件路径
-├── cmake                       -- cmake函数文件夹
-├── docker-compose.yml          -- 编译环境
-├── lib                         -- 库的输出路径
-├── src                         -- 项目源码
-└── tests                       -- 测试代码路径
+├── bin                          
+├── cmake                       -- cmake function file
+├── docker-compose.yml          -- compile env
+├── lib                         -- lib output
+├── src                         -- project resource
+└── tests                       -- test file
 ```
 
-## 日志系统
+## Log System
 
-1. Log4J
+### Log4J
 ```
-Logger (定义日志级别)
+Logger (a log object)
     |
-    |-----------Formatter (日志格式)
+    |-----------Formatter (format the output)
     |
-Appender (日志输出)
+Appender (output object)
+
+LogEvent -> Logger -> Appender -> output
 ```
 
-## 配置系统
+### LogFormatter:
+    /**
+     * %xxx %xxx{xxx} %%
+     */
+* %m -- message content
+* %p -- level
+* %r -- milliseconds after start
+* %c -- log name
+* %t -- thread id
+* %n -- new line
+* %d -- time. It can change datetime format by `%d{xxx}`. It uses the linux localhost format.
+* %f -- filename
+* %l -- line number
+* %T -- tab
+* %% -- output %
 
-Config --> Yaml
+### LogAppender
+Current LogAppender:
+* StdoutLogAppender - Output the log event to the standard output stream
+* FileLogAppender - Output the log event to the file
 
-配置系统原则：约定优于配置
+If you want to add a new LogAppender type:
+1. Implement a derived class of `LogAppender`, and implement pure virtual functions `log` and `toYamlString`
+   ```c++
+    class StdoutLogAppender: public LogAppender {
+    public:
+        typedef std::shared_ptr<StdoutLogAppender> ptr;
+
+        StdoutLogAppender(LogLevel::Level level = LogLevel::UNKNOWN);
+        void log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override;  // override指明是重载的方法
+        std::string toYamlString() override;
+    };
+   
+   
+    StdoutLogAppender::StdoutLogAppender(LogLevel::Level level) : LogAppender(level) {}
+
+    void StdoutLogAppender::log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) {
+        if (level >= m_level) {
+            std::cout << m_formatter->format(logger, level, event);
+        }
+    }
+
+    std::string StdoutLogAppender::toYamlString() {
+        YAML::Node node;
+        node["type"] = "StdoutLogAppender";
+        if (m_level != LogLevel::UNKNOWN)
+            node["level"] = LogLevel::toString(m_level);
+        if (m_formatter && m_hasFormatter) {
+            node["formatter"] = m_formatter->getPattern();
+        }
+        std::stringstream ss;
+        ss << node;
+        return ss.str();
+    }
+   ```
+2. Register the new LogAppender type in `log.cpp`
+   ```c++
+    // Add it in LogAppenderDefine::AppenderType 
+    struct LogAppenderDefine {
+     enum AppenderType {
+         UNKNOWN = 0,
+         StdLogAppender = 1,
+         FileLogAppender = 2,
+         MyLogAppender = 3
+     };
+   ```
+3. Add the parse method in new LogAppender type in `class LexicalCast<std::string, LogDefine>`, 
+   `class LexicalCast<LogDefine, std::string>`, `LogIniter()`
+
+
+### LogManager
+Logger `root` is the global default logger. If it does not exist, it will be automatically created by LogManager.
+All loggers except `root` have a pointer `m_root` pointing to `root`. When the sub-logger does not have any `LogAppender`,
+then the `LogAppender` of `root` will be called for output.
+
+If called `LogManager::getLogger(name)` or `MOCKER_LOG_NAME(name)` and the `name` has never been used, 
+   it will create a new logger by this `name`.
+
+### Set up Logger by YAML Config
+
+Default configuration file path of the logging system is `bin/conf/log.yml`, and the configuration format is as follows:
+```yaml
+logs:
+  - name: root
+    level: (debug, info, warn, error, fatal)
+    formatter: '%d%T%p%T%t%m%n'
+    appenders:
+      - type: (StdoutLogAppener, FileLogAppender)
+        level: (debug, ...)
+        file: /logs/xxx.log
+        formatter: '%d%T%m%n'
+```
+
+
+### Example
+1. Custom
 ```c++
-template<T, FromStr, ToStr>
-class ConfigVar;
-
-template<F, T>
-LexicalCast;
-
-// STL支持
-// 目前支持：vector, list, set, map, unordered_set, unordered_map
-// (unordered_)map/set仅支持key = std::string
-// Config::lookup key相同但类型不同的，会报错
-// 所有的配置名需均为小写
+mocker::Logger::ptr logger(new mocker::Logger);
+logger->addAppender(mocker::LogAppender::ptr (new mocker::StdoutLogAppender(mocker::LogLevel::INFO)));
+mocker::LogEvent::ptr logEvent(new mocker::LogEvent(__FILE__, __LINE__, 0, 0, 0, 0, "root"));
+logEvent->getSS() << "Hello, World!";
+logger->log(mocker::LogLevel::WARN, logEvent);
 ```
 
-自定义类型，需要实现mocker::LexicalCast特化
-实现后，就可以支持Config解析自定义类型，自定义类型可以和常规STL容器一起使用
+2. Use macro define in log.h
+```c++
+// If you has setted up the logger config, 
+// and register it to the LogManager.
+// Also logger config can set up by yaml file.
+mocker::Logger::ptr logger = MOCKER_LOG_NAME(logger_name);
+MOCKER_LOG_INFO(logger) << "log message";
+// or format the output
+MOCKER_LOG_FMT_DEBUG(logger, "log message No.%d", 10); 
+```
 
-配置的事件机制
-当一个配置项发生修改的时候，可以反向同志对应的代码，回调
+3. Serialization
+```c++
+Logger->toYamlString();
+LogAppender->toYamlString();
+LogManager->toYamlString();
+```
+
+
+## Configuration System
+
+Current supported type: `vector`, `list`, `set`, `map`,`unordered_set`, 
+   `unordered_map` and basic data type. (`(unordered_)map/set` only support the key type is `std::string`)
+
+```c++
+// Use it to store a config variable.
+// ConfigVar name use a dot to seperate parent and child.
+template<T, FromStr, ToStr>
+class ConfigVar(name, default_value, description);
+
+// use it to serialization/deserialization between ConfigVar and YAML.
+template<F, T>
+LexicalCast;  
+```
+
+### Custom Type
+For custom type, you need to implement two special `mocker::LexicalCast` and override `operater()`.
+* from string: `class LexicalCast<std::string, custom_type>`
+* to string: `class LexicalCast<ustom_type, std::string>`
+
+For example:
+```c++
+class Person {
+public:
+   std::string m_name = "null";
+   int m_age = 0;
+   bool m_sex = 0;
+
+   std::string toString() const {
+   std::stringstream ss;
+   ss << "[Person name=" << m_name
+      << " age=" << m_age
+      << " sex=" << m_sex
+      << "]";
+   return ss.str();
+}
+
+   bool operator== (const Person& oth) const {
+      return m_name == oth.m_name
+      && m_age == oth.m_age
+      && m_sex == oth.m_sex;
+   }
+};
+
+// Here are the two special `mocker::LexicalCast` you need to implement.
+namespace mocker {
+template<>
+class LexicalCast<std::string, Person> {
+public:
+   Person operator() (const std::string& v) {
+      YAML::Node node = YAML::Load(v);
+      Person p;
+      p.m_name = node["name"].as<std::string>();
+      p.m_age = node["age"].as<int>();
+      p.m_sex= node["sex"].as<bool>();
+      return p;
+   }
+};
+
+template<>
+class LexicalCast<Person, std::string> {
+public:
+   std::string operator()(const Person &p) {
+      YAML::Node node;
+      node["name"] = p.m_name;
+      node["age"] = p.m_age;
+      node["sex"] = p.m_sex;
+      std::stringstream ss;
+      ss << node;
+      return ss.str();
+   }
+};
+}
+```
+
+### Config Event
+Register a callback to catch the config event. It include: 
+* `addListener` -- add a listener or modify a current listener
+* `delListener` -- delete a listener
+* `getListener` -- get a listener's callback function
+* `clearListener` -- delete all listener
+
+For example:
+```c++
+// Call lookup to get the config from YAML
+mocker::ConfigVar<Person>::ptr g_person =
+      mocker::Config::lookup("class.person", Person(), "system person");
+
+// Set a listener to ConfigVar g_person.
+// addListener(listener_id, [](old, new) -> void {})
+g_person->addListener(10, 
+                      [](const Person& old_value, const Person& new_value){
+      MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "old_value=" << old_value.toString()
+      << " new_value=" << new_value.toString();
+}
+```
+
+### Example
+If I have `config.yml`
+```yaml
+system:
+   ipaddr: localhost
+   port: 123
+```
+and then
+```c++
+// Define a config variable `system port`. 
+// The name "system.port" corresponds to the `port` in `system` table 
+// in the yaml file 
+mocker::ConfigVar<int>::ptr g_int_value_config =
+      mocker::Config::lookup("system.port", (int)8080, "system port");
+
+// Call loadFromYaml to parse yaml file.
+// The yaml file will change the value in `g_int_value_config`
+YAML::Node root = YAML::LoadFile("/path/to/config.yml");
+mocker::Config::loadFromYaml(root);
+
+// Get value
+g_int_value_config->getValue();
+// Get value string
+g_int_value_config->toString();
+```
 
 ## 协程库封装
 
@@ -75,4 +296,4 @@ LexicalCast;
 
 ## 推荐系统
 
-
+## TODO

@@ -1,59 +1,17 @@
 logs:
   - name: root
-    level: info
-    formatter: "%d%T%m%n"
-    appender:
+    level: INFO
+    formatter: "%d%T%c%T%m%n"
+    appenders:
       - type: FileLogAppender
-        path: log.txt
+        level: error
+        file: root.log
       - type: StdoutLogAppender
   - name: system
     level: debug
-    formatter: "%d%T%m%n"
-    appender:
+    formatter: "%d%T%c%T[%p]%T%m%n"
+    appenders:
       - type: FileLogAppender
-        path: log.txt
+        file: system.log
       - type: StdoutLogAppender
-
-system:
-  port: 9900
-  value: 15
-  int_vec:
-    - 10
-    - 20
-  int_list: [20, 40, 100]
-  int_set: [100, 200, 100]
-  int_uset: [10, 20, 60, 20]
-  int_map:
-    a: 99
-    b: 100
-    c: 101
-  int_umap:
-    a: 101
-    c: 102
-
-class:
-  person:
-    name: mocker
-    age: 22
-    sex: true
-  map:
-    mocker01:
-      name: mocker01
-      age: 23
-      sex: false
-    mocker02:
-      name: mocker02
-      age: 24
-      sex: true
-  map_vec:
-    group1:
-      - name: mocker03
-        age: 23
-        sex: false
-      - name: mocker 04
-        age: 25
-        sex: true
-    group2:
-      - name: yahaha
-        age: 999
-        sex: false
+        formatter: "%d%T%c%T[%p]<%l>%T%m%n"

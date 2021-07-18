@@ -1,3 +1,0 @@
-2021-05-11 02:24:06	Hello mocker log
-2021-05-11 02:24:06	THis a 3rr0R
-2021-05-11 02:24:06	WARN happened in 12 0xF

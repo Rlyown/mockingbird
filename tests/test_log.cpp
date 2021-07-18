@@ -10,9 +10,9 @@
 
 int main(int argc, char *argv[]) {
 
-    mocker::Logger::ptr logger(new mocker::Logger);
-    logger->addAppender(mocker::LogAppender::ptr (new mocker::StdoutLogAppender(mocker::LogLevel::INFO)));
-//    mocker::LogEvent::ptr logEvent(new mocker::LogEvent(__FILE__, __LINE__, 0, 0, 0, 0));
+//    mocker::Logger::ptr logger(new mocker::Logger);
+//    logger->addAppender(mocker::LogAppender::ptr (new mocker::StdoutLogAppender(mocker::LogLevel::INFO)));
+//    mocker::LogEvent::ptr logEvent(new mocker::LogEvent(__FILE__, __LINE__, 0, 0, 0, 0, "root"));
 //    logEvent->getSS() << "Hello, World!";
 //    logger->log(mocker::LogLevel::WARN, logEvent);
 
@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
 //
 //    MOCKER_LOG_DEBUG(logger) << "Hello mocker log";
 //
-    MOCKER_LOG_ERROR(logger) << "THis a 3rr0R";
+    MOCKER_LOG_ERROR(MOCKER_LOG_NAME("root")) << "THis a 3rr0R";
 //
 //    MOCKER_LOG_FMT_WARN(logger, "WARN happened in %d 0x%X", 12, 15);
 //

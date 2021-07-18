@@ -3,5 +3,7 @@
 .clion.source.upload.marker
 cmake-build-remote
 
+/bin
+!bin/conf
 
 

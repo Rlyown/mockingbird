@@ -1,8 +1,8 @@
 version: '2.2'
 
 services:
-  dev_host:
-    container_name: dev_host
+  mocker:
+    container_name: mocker
     image: rlyown/cdev_host
     security_opt: # options needed for gdb debugging
       - seccomp:unconfined

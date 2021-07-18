@@ -3,6 +3,7 @@
 //
 
 
+#include <iostream>
 #include <vector>
 #include <map>
 #include <yaml-cpp/yaml.h>
@@ -58,7 +59,7 @@ void print_yaml(const YAML::Node& node, int level) {
 }
 
 void test_yaml() {
-    YAML::Node root = YAML::LoadFile("../bin/conf/log.yml");
+    YAML::Node root = YAML::LoadFile("../bin/conf/test.yml");
     print_yaml(root, 0);
     MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << root.Scalar();
 
@@ -88,7 +89,7 @@ void test_config() {
     XX_M(g_int_map_value_config, int_map, brefore);
     XX_M(g_int_umap_value_config, int_umap, brefore);
 
-    YAML::Node root = YAML::LoadFile("../bin/conf/log.yml");
+    YAML::Node root = YAML::LoadFile("../bin/conf/test.yml");
     mocker::Config::loadFromYaml(root);
 
     MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "After: " << g_int_value_config->getValue();
@@ -136,7 +137,6 @@ namespace mocker {
     public:
         Person operator() (const std::string& v) {
             YAML::Node node = YAML::Load(v);
-            std::stringstream ss;
             Person p;
             p.m_name = node["name"].as<std::string>();
             p.m_age = node["age"].as<int>();
@@ -190,7 +190,7 @@ void test_class() {
 
     MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "before: " << g_person_map_vec->toString();
 
-    YAML::Node root = YAML::LoadFile("../bin/conf/log.yml");
+    YAML::Node root = YAML::LoadFile("../bin/conf/test.yml");
     mocker::Config::loadFromYaml(root);
 
     MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "after: " << g_person->getValue().toString() << " - " << g_person->toString();
@@ -199,10 +199,24 @@ void test_class() {
     MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "after: " << g_person_map_vec->toString();
 #undef XX_PM
 }
+
+void test_log() {
+    std::cout << mocker::LoggerMgr::GetInstance()->toYamlString() << std::endl;
+    YAML::Node root = YAML::LoadFile("../bin/conf/log.yml");
+    mocker::Config::loadFromYaml(root);
+    std::cout << "===================================" << std::endl;
+    std::cout << mocker::LoggerMgr::GetInstance()->toYamlString() << std::endl;
+    std::cout << "===================================" << std::endl;
+    MOCKER_LOG_INFO(MOCKER_LOG_NAME("system")) << "Hello system log";
+    MOCKER_LOG_NAME("system")->setFormatter("%d - %f - %m%n");
+    MOCKER_LOG_WARN(MOCKER_LOG_NAME("system")) << "system formatter changed";
+}
+
+
 int main(int argc, char *argv[]) {
 //    test_yaml();
 //    test_config();
-    test_class();
-
+//    test_class();
+    test_log();
     return 0;
 }

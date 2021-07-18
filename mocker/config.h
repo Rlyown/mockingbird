@@ -375,7 +375,8 @@ namespace mocker {
         }
     private:
         T m_val;
-        // 变更回调函数组，uint64_t key要求唯一，一般可以用hash
+        // Change the callback function group, the uint64_t key must be
+        // unique, generally hash can be used
         std::map<uint64_t, on_change_cb> m_cbs;
     };
 
@@ -386,13 +387,21 @@ namespace mocker {
     public:
         typedef std::map<std::string, ConfigVarBase::ptr> ConfigVarMap;
 
+        /**
+         * Look up a config variable. If it doesn't exist, lookup will create it.
+         * @tparam T
+         * @param name
+         * @param default_value
+         * @param description
+         * @return
+         */
         template<class T>
         static typename ConfigVar<T>::ptr lookup(const std::string& name,
                                                  const T& default_value,
                                                  const std::string& description = "") {
 
-            auto it = s_data.find(name);
-            if (it != s_data.end()) {
+            auto it = getData().find(name);
+            if (it != getData().end()) {
                 auto tmp = std::dynamic_pointer_cast<ConfigVar<T>>(it->second);
                 if (tmp) {
                     MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "Lookup name=" << name << " exists";
@@ -411,14 +420,20 @@ namespace mocker {
             }
 
             typename ConfigVar<T>::ptr v(new ConfigVar<T>(name, default_value, description));
-            s_data[name] = v;
+            getData()[name] = v;
             return v;
         }
 
+        /**
+         * Just look up the config variable, without creating it.
+         * @tparam T
+         * @param name
+         * @return
+         */
         template<class T>
         static typename ConfigVar<T>::ptr lookup(const std::string& name) {
-            auto it = s_data.find(name);
-            if (it == s_data.end()) {
+            auto it = getData().find(name);
+            if (it == getData().end()) {
                 return nullptr;
             }
             return std::dynamic_pointer_cast<ConfigVar<T>>(it->second);
@@ -428,7 +443,19 @@ namespace mocker {
         static ConfigVarBase::ptr lookupBase(const std::string& name);
 
     private:
-        static ConfigVarMap s_data;
+        /**
+         * The reason why the static member s_data is not directly defined
+         * here is because the order of initialization cannot be guaranteed
+         * when the memory is initialized. Therefore, when other static
+         * members call lookup for initialization, there may be cases where
+         * s_data has not been initialized. So use a static function to
+         * encapsulate to ensure that s_data has been initialized when calling.
+         * @return s_data
+         */
+        static ConfigVarMap& getData() {
+            static ConfigVarMap s_data;
+            return s_data;
+        }
     };
 }
 

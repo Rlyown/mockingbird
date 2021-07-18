@@ -22,9 +22,8 @@
 namespace mocker {
 
     class Logger;
+    class LogManager;
 
-
-    // 日志级别
     class LogLevel {
     public:
         enum Level {
@@ -33,19 +32,21 @@ namespace mocker {
             INFO = 2,
             WARN = 3,
             ERROR = 4,
-            FATAL = 5
+            FATAL = 5,
+            REMOVED = 100
         };
 
-        static const char * ToString(LogLevel::Level level);
+        static const char * toString(LogLevel::Level level);
+        static LogLevel::Level fromString(std::string str);
     };
 
 
-    // 日志事件
     class LogEvent {
     public:
         typedef std::shared_ptr<LogEvent> ptr;
         LogEvent(const char * file, int32_t line, uint32_t elapse,
-                 uint32_t threadId, uint32_t fiberId, uint64_t time);
+                 uint32_t threadId, uint32_t fiberId, uint64_t time,
+                 const std::string& logger_real_name = "");
         ~LogEvent();
 
         const char * getFile() const { return m_file; }
@@ -56,6 +57,7 @@ namespace mocker {
         uint64_t getTime() const { return m_time; }
         std::string getContent() const { return m_ss.str(); }
         std::stringstream& getSS() { return m_ss; }
+        std::string getLoggerRealName() { return m_logger_real_name; }
 
         void format(const char* fmt, ...);
         void format(const char* fmt, va_list al);
@@ -67,10 +69,12 @@ namespace mocker {
         uint32_t m_fiberId = 0;             // 协程id
         uint64_t m_time = 0;                // 时间戳
         std::stringstream m_ss;
+
+        std::string m_logger_real_name;
     };
 
 
-    // 日志格式器
+
     class LogFormatter {
     public:
         typedef std::shared_ptr<LogFormatter> ptr;
@@ -78,6 +82,8 @@ namespace mocker {
         LogFormatter(std::string pattern);
 
         std::string format(std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event);
+
+        std::string getPattern() const { return m_pattern; }
 
     public:
         class FormatItem {
@@ -89,27 +95,27 @@ namespace mocker {
 
         void init();
 
+        bool isError() const { return m_error; }
     private:
         std::string m_pattern;
         std::vector<FormatItem::ptr> m_items;
-
+        bool m_error = false;
     };
 
 
-
-
-    // 日志输出地
     class LogAppender {
+    public:
+        friend class Logger;
     public:
         typedef std::shared_ptr<LogAppender> ptr;
 
-        LogAppender(LogLevel::Level level = LogLevel::DEBUG);
+        LogAppender(LogLevel::Level level = LogLevel::UNKNOWN);
         virtual ~LogAppender() {}
 
-        // 纯虚函数，方法交由子类实现
         virtual void log(std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) = 0;
+        virtual std::string toYamlString() = 0;
 
-        void setFormatter(LogFormatter::ptr val) { m_formatter = val; }
+        void setFormatter(LogFormatter::ptr val);
         LogFormatter::ptr getFormatter() const { return m_formatter; }
 
         void setLevel(LogLevel::Level level) { m_level = level; }
@@ -117,12 +123,13 @@ namespace mocker {
 
     protected:
         LogLevel::Level m_level;
+        bool m_hasFormatter = false;
         LogFormatter::ptr m_formatter;
     };
 
 
-    // 日志器
     class Logger : public std::enable_shared_from_this<Logger>{
+        friend class LogManager;
     public:
         typedef std::shared_ptr<Logger> ptr;
 
@@ -138,37 +145,46 @@ namespace mocker {
 
         void addAppender(LogAppender::ptr appender);
         void delAppender(LogAppender::ptr appender);
+        void clearAppender();
 
         LogLevel::Level getLevel() const { return m_level; }
         void setLevel(LogLevel::Level val) { m_level = val; }
 
         const std::string& getName() const { return m_name; }
+
+        void setFormatter(LogFormatter::ptr val);
+        void setFormatter(const std::string& val);
+        LogFormatter::ptr getFormatter() const { return m_formatter; }
+
+        std::string toYamlString();
     private:
-        std::string m_name;                         // 日志名称
-        LogLevel::Level m_level;                    // 日志级别
-        std::list<LogAppender::ptr> m_appenders;    // 日志输出集合
+        std::string m_name;
+        LogLevel::Level m_level;
+        std::list<LogAppender::ptr> m_appenders;
         LogFormatter::ptr m_formatter;
+
+        ptr m_root;
     };
 
 
-    // 输出到console
     class StdoutLogAppender: public LogAppender {
     public:
         typedef std::shared_ptr<StdoutLogAppender> ptr;
 
-        StdoutLogAppender(LogLevel::Level level = LogLevel::DEBUG);
+        StdoutLogAppender(LogLevel::Level level = LogLevel::UNKNOWN);
         void log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override;  // override指明是重载的方法
+        std::string toYamlString() override;
     };
 
 
-    // 输出到文件
     class FileLogAppender: public LogAppender {
     public:
         typedef std::shared_ptr<FileLogAppender> ptr;
 
-        FileLogAppender(const std::string& filename, LogLevel::Level level = LogLevel::DEBUG);
+        FileLogAppender(const std::string& filename, LogLevel::Level level = LogLevel::UNKNOWN);
         ~FileLogAppender();
         void log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override;
+        std::string toYamlString() override;
 
         bool reopen();
     private:
@@ -191,7 +207,6 @@ namespace mocker {
     };
 
 
-    // Log 管理器
     class LogManager {
     public:
         LogManager();
@@ -199,6 +214,8 @@ namespace mocker {
 
         void init();
         Logger::ptr getRoot() const { return m_root; }
+
+        std::string toYamlString();
     private:
         std::map<std::string, Logger::ptr> m_loggers;
         Logger::ptr m_root;
@@ -214,7 +231,8 @@ namespace mocker {
                 mocker::LogEvent::ptr(new mocker::LogEvent(__FILE__, __LINE__, 0, \
                                                         mocker::GetThreadId(), \
                                                         mocker::GetFiberId(), \
-                                                        time(0)))).getSS()
+                                                        time(0), \
+                                                        (logger)->getName()))).getSS()
 
 #define MOCKER_LOG_DEBUG(logger) MOCKER_LOG_LEVEL(logger, mocker::LogLevel::DEBUG)
 #define MOCKER_LOG_INFO(logger)  MOCKER_LOG_LEVEL(logger, mocker::LogLevel::INFO)
@@ -228,7 +246,8 @@ namespace mocker {
                 mocker::LogEvent::ptr(new mocker::LogEvent(__FILE__, __LINE__, 0, \
                                                         mocker::GetThreadId(), \
                                                         mocker::GetFiberId(), \
-                                                        time(0)))).getEvent()->format(fmt, __VA_ARGS__)
+                                                        time(0), \
+                                                        (logger)->getName()))).getEvent()->format(fmt, __VA_ARGS__)
 
 #define MOCKER_LOG_FMT_DEBUG(logger, fmt, ...) MOCKER_LOG_FMT_LEVEL(logger, mocker::LogLevel::DEBUG, fmt, __VA_ARGS__)
 #define MOCKER_LOG_FMT_INFO(logger, fmt, ...)  MOCKER_LOG_FMT_LEVEL(logger, mocker::LogLevel::INFO, fmt, __VA_ARGS__)
@@ -237,6 +256,7 @@ namespace mocker {
 #define MOCKER_LOG_FMT_FATAL(logger, fmt, ...) MOCKER_LOG_FMT_LEVEL(logger, mocker::LogLevel::FATAL, fmt, __VA_ARGS__)
 
 #define MOCKER_LOG_ROOT() mocker::LoggerMgr::GetInstance()->getRoot()
+#define MOCKER_LOG_NAME(name) mocker::LoggerMgr::GetInstance()->getLogger(name)
 
 #endif //MOCKER_LOG_H
 
