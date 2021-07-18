@@ -3,7 +3,7 @@
 action=$1
 
 if [ "$action" = "enter" ]; then
-    docker exec -it dev_host /bin/bash
+    docker exec -it mocker /bin/bash
 elif [ "$action" = "up" ]; then
     docker-compose -f docker-compose.yml up -d
 elif [ "$action" = "down" ]; then

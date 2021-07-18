@@ -16,3 +16,15 @@ function(force_redefine_file_macro_for_sources targetname)
         )
     endforeach()
 endfunction()
+
+
+# use it to set target without inputting common settings
+function(mocker_build_target targetname targetsource)
+    foreach(v IN LISTS ARGN)
+        LIST(APPEND targetsource ${v})
+    endforeach()
+    add_executable(${targetname} ${targetsource})
+    add_dependencies(${targetname} mocker)
+    force_redefine_file_macro_for_sources(${targetname})  # __FILE__
+    target_link_libraries(${targetname} ${LIB_LIB})
+endfunction()

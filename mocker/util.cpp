@@ -2,16 +2,16 @@
 // Created by ChaosChen on 2021/5/10.
 //
 
-#include <functional>
-#include <thread>
 #include <mocker/util.h>
 
 namespace mocker {
-    size_t GetThreadId() {
-        return std::hash<std::thread::id>{}(std::this_thread::get_id());
+    pid_t getThreadId() {
+        // https://man7.org/linux/man-pages/man2/gettid.2.html
+        // return syscall(SYS_gettid);
+        return gettid();
     }
 
-    uint32_t GetFiberId() {
+    uint32_t getFiberId() {
         return 0;
     }
 }

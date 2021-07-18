@@ -106,9 +106,11 @@ If you want to add a new LogAppender type:
 
 
 ### LogManager
-Logger `root` is the global default logger. If it does not exist, it will be automatically created by LogManager.
+There are two default global Logger:
+* Logger `root`. If it does not exist, it will be automatically created by LogManager.
 All loggers except `root` have a pointer `m_root` pointing to `root`. When the sub-logger does not have any `LogAppender`,
 then the `LogAppender` of `root` will be called for output.
+* Logger `system`. 
 
 If called `LogManager::getLogger(name)` or `MOCKER_LOG_NAME(name)` and the `name` has never been used, 
    it will create a new logger by this `name`.
@@ -281,6 +283,9 @@ g_int_value_config->getValue();
 // Get value string
 g_int_value_config->toString();
 ```
+
+## Thread
+
 
 ## 协程库封装
 

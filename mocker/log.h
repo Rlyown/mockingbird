@@ -229,8 +229,8 @@ namespace mocker {
 #define MOCKER_LOG_LEVEL(logger, level) \
         mocker::LogEventWrapper(logger, level, \
                 mocker::LogEvent::ptr(new mocker::LogEvent(__FILE__, __LINE__, 0, \
-                                                        mocker::GetThreadId(), \
-                                                        mocker::GetFiberId(), \
+                                                        mocker::getThreadId(), \
+                                                        mocker::getFiberId(), \
                                                         time(0), \
                                                         (logger)->getName()))).getSS()
 
@@ -244,8 +244,8 @@ namespace mocker {
 #define MOCKER_LOG_FMT_LEVEL(logger, level, fmt, ...) \
         mocker::LogEventWrapper(logger, level, \
                 mocker::LogEvent::ptr(new mocker::LogEvent(__FILE__, __LINE__, 0, \
-                                                        mocker::GetThreadId(), \
-                                                        mocker::GetFiberId(), \
+                                                        mocker::getThreadId(), \
+                                                        mocker::getFiberId(), \
                                                         time(0), \
                                                         (logger)->getName()))).getEvent()->format(fmt, __VA_ARGS__)
 
@@ -256,6 +256,7 @@ namespace mocker {
 #define MOCKER_LOG_FMT_FATAL(logger, fmt, ...) MOCKER_LOG_FMT_LEVEL(logger, mocker::LogLevel::FATAL, fmt, __VA_ARGS__)
 
 #define MOCKER_LOG_ROOT() mocker::LoggerMgr::GetInstance()->getRoot()
+#define MOCKER_LOG_SYSTEM() mocker::LoggerMgr::GetInstance()->getLogger("system")
 #define MOCKER_LOG_NAME(name) mocker::LoggerMgr::GetInstance()->getLogger(name)
 
 #endif //MOCKER_LOG_H
