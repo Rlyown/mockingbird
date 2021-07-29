@@ -1,6 +1,7 @@
 
 ## Develop Environment
 
+* Dev Platform: arm64
 * Ubuntu 20.04
 * gcc 9.3.0
 * cmake 3.16.3
@@ -141,7 +142,7 @@ logEvent->getSS() << "Hello, World!";
 logger->log(mocker::LogLevel::WARN, logEvent);
 ```
 
-2. Use macro define in log.h
+2. Use macro definition in log.h
 ```c++
 // If you has setted up the logger config, 
 // and register it to the LogManager.
