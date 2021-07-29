@@ -102,10 +102,8 @@ namespace mocker {
     }
 
     void Semaphore::wait() {
-        while (true) {
-            if (sem_wait(&m_semaphore)) {
-                throw std::logic_error("sem_wait error");
-            }
+        if (sem_wait(&m_semaphore)) {
+            throw std::logic_error("sem_wait error");
         }
     }
 
