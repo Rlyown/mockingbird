@@ -74,5 +74,7 @@ int main(int argc, char *argv[]) {
     // Mutex    -> 2.334
     // Spinlock -> 2.26452
     // CASLock  -> 2.5923
+
+
     return 0;
 }

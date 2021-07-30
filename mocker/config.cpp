@@ -8,10 +8,13 @@
 
 namespace mocker {
 
+    ////////////////////////////////////////////////////////////////////
+    /// Config
+    ///////////////////////////////////////////////////////////////////
     ConfigVarBase::ptr Config::lookupBase(const std::string &name) {
+        RWMutexType::ReadLock lock(getRWMutex());
         auto it = getData().find(name);
         return it == getData().end() ? nullptr : it->second;
-
     }
 
     static void listAllMember(const std::string& prefix,
@@ -56,7 +59,15 @@ namespace mocker {
                     var->fromString(ss.str());
                 }
             }
+        }
+    }
 
+    void Config::visit(const std::function<void(ConfigVarBase::ptr)>& cb) {
+        RWMutexType::ReadLock lock(getRWMutex());
+        ConfigVarMap& m = getData();
+
+        for (auto & it : m) {
+            cb(it.second);
         }
     }
 

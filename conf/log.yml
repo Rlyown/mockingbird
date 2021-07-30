@@ -3,10 +3,10 @@ logs:
     level: INFO
 #    formatter: "%d%T%c%T%m%n"
     appenders:
-      - type: FileLogAppender
+#      - type: FileLogAppender
 #        level: error
-        file: mutex.log
-#      - type: StdoutLogAppender
+#        file: mutex.log
+      - type: StdoutLogAppender
 #  - name: system
 #    level: debug
 #    formatter: "%d%T%c%T[%p]%T%m%n"

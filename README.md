@@ -252,9 +252,8 @@ mocker::ConfigVar<Person>::ptr g_person =
       mocker::Config::lookup("class.person", Person(), "system person");
 
 // Set a listener to ConfigVar g_person.
-// addListener(listener_id, [](old, new) -> void {})
-g_person->addListener(10, 
-                      [](const Person& old_value, const Person& new_value){
+// addListener([](old, new) -> void {})
+g_person->addListener([](const Person& old_value, const Person& new_value){
       MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "old_value=" << old_value.toString()
       << " new_value=" << new_value.toString();
 }

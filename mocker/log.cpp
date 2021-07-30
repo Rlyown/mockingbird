@@ -783,8 +783,7 @@ namespace mocker {
 
     struct LogIniter {
         LogIniter() {
-            g_log_defines->addListener(0xF1E231,
-                                       [](const std::set<LogDefine>& old_value,
+            g_log_defines->addListener([](const std::set<LogDefine>& old_value,
                                           const std::set<LogDefine>& new_value){
                                            MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "on logger configuration changed";
                                            for (auto& i : new_value) {
