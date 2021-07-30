@@ -547,16 +547,7 @@ namespace mocker {
 
 
     FileLogAppender::FileLogAppender(const std::string &filename, LogLevel::Level level)
-            : LogAppender(level) {
-        // 给日志的文件名加上日期
-        struct tm tp{};
-        time_t timer = time(nullptr);
-        localtime_r(&timer, &tp);
-        char buf[64];
-        strftime(buf, sizeof(buf), ".%Y-%m-%d", &tp);
-
-        m_filename = filename + std::string(buf);
-
+            : LogAppender(level), m_filename(filename) {
         reopen();
     }
 
@@ -598,10 +589,18 @@ namespace mocker {
      */
     bool FileLogAppender::reopen() {
         MutexType::Lock lock(m_mutex);
+
+        // 给日志的文件名加上日期
+        struct tm tp{};
+        time_t timer = time(nullptr);
+        localtime_r(&timer, &tp);
+        char buf[64];
+        strftime(buf, sizeof(buf), ".%Y-%m-%d", &tp);
+
         if (m_filestream) {
             m_filestream.close();
         }
-        m_filestream.open(m_filename, std::ios::app);
+        m_filestream.open(m_filename + std::string(buf), std::ios::app);
         return !!m_filestream;
     }
 
