@@ -286,20 +286,32 @@ g_int_value_config->toString();
 ```
 
 ## Thread
+Encapsulates some thread and mutex functions in pthread. `Mutex`, `Spinlock`, `RWMutex`, `CASLock` are supported.
+
+### Example
+Use Thread class to create a thread task.
+```c++
+// Create and run
+mocker::Thread::ptr thr(new mocker::Thread(fun2, "name_0");
+// wait for finishing
+thr.join();
+```
+Use a mutex lock
+```c++
+mocker::RWMutex s_mutex;
+mocker::Mutex mutex;
+
+// To lock a block
+{
+    // write lock 
+    mocker::RWMutex::WriteLock lock(s_mutex);
+    // or read lock
+    mocker::RWMutex::ReadLock lock(s_mutex);
+    // or just a lock
+    mocker::Mutex::Lock lock(mutex);
+}
+```
+
+## Coroutine
 
 
-## 协程库封装
-
-
-## socket函数库
-
-
-## http协议开发
-
-
-## 分布协议
-
-
-## 推荐系统
-
-## TODO
