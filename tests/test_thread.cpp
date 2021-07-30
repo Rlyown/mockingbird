@@ -30,14 +30,14 @@ void fun1() {
 }
 
 void fun2() {
-    int n = 10000;
-    while (n--)
+//    int n = 10000;
+    while (true)
         MOCKER_LOG_INFO(g_logger) << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 }
 
 void fun3() {
-    int n = 10000;
-    while (n--)
+//    int n = 10000;
+    while (true)
         MOCKER_LOG_INFO(g_logger) << "============================================================";
 }
 
