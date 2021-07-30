@@ -110,7 +110,7 @@ namespace mocker {
         friend class Logger;
     public:
         typedef std::shared_ptr<LogAppender> ptr;
-        typedef Mutex MutexType;
+        typedef Spinlock MutexType;
 
         LogAppender(LogLevel::Level level = LogLevel::UNKNOWN);
         virtual ~LogAppender() {}
@@ -136,7 +136,7 @@ namespace mocker {
         friend class LogManager;
     public:
         typedef std::shared_ptr<Logger> ptr;
-        typedef Mutex MutexType;
+        typedef Spinlock MutexType;
 
         Logger(const std::string& name = "root");
 
@@ -196,6 +196,7 @@ namespace mocker {
     private:
         std::string m_filename;
         std::ofstream m_filestream;
+        uint64_t m_lastTime = 0;
     };
 
 
@@ -215,7 +216,7 @@ namespace mocker {
 
     class LogManager {
     public:
-        typedef Mutex MutexType;
+        typedef Spinlock MutexType;
 
         LogManager();
         Logger::ptr getLogger(const std::string& name);

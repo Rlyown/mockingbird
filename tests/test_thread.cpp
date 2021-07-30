@@ -4,6 +4,8 @@
 
 #include <vector>
 #include <unistd.h>
+#include <sys/time.h>
+#include <iostream>
 
 #include <mocker/mocker.h>
 
@@ -28,22 +30,28 @@ void fun1() {
 }
 
 void fun2() {
-    int n = 100;
+    int n = 10000;
     while (n--)
         MOCKER_LOG_INFO(g_logger) << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 }
 
 void fun3() {
-    int n = 100;
+    int n = 10000;
     while (n--)
         MOCKER_LOG_INFO(g_logger) << "============================================================";
 }
 
 int main(int argc, char *argv[]) {
+    struct timeval t1, t2;
+    double timeuse;
+
     YAML::Node root = YAML::LoadFile("../conf/log.yml");
     mocker::Config::loadFromYaml(root);
     MOCKER_LOG_INFO(g_logger) << "thread test begin";
     std::vector<mocker::Thread::ptr> thrs;
+
+    gettimeofday(&t1,nullptr);
+
     for (int i = 0; i < 2; ++i) {
         mocker::Thread::ptr thr(new mocker::Thread(fun2, "name_" + std::to_string(i * 2)));
         mocker::Thread::ptr thr2(new mocker::Thread(fun3, "name_" + std::to_string(i * 2 + 1)));
@@ -55,7 +63,16 @@ int main(int argc, char *argv[]) {
         thr->join();
     }
 
+    gettimeofday(&t2,nullptr);
+
     MOCKER_LOG_INFO(g_logger) << "thread test end";
     MOCKER_LOG_INFO(g_logger) << "count=" << count;
+
+    timeuse = (t2.tv_sec - t1.tv_sec) + (double)(t2.tv_usec - t1.tv_usec)/1000000.0;
+    std::cout << "time = " << timeuse << std::endl;
+    // run fun2 and fun3 at 10000 times
+    // Mutex    -> 2.334
+    // Spinlock -> 2.26452
+    // CASLock  -> 2.5923
     return 0;
 }

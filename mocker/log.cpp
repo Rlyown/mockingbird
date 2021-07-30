@@ -566,6 +566,11 @@ namespace mocker {
 
     void FileLogAppender::log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) {
         if (level >= m_level) {
+            uint64_t now = time(nullptr);
+            if (now != m_lastTime) {
+                reopen();
+                m_lastTime = now;
+            }
             MutexType::Lock lock(m_mutex);
             m_filestream << m_formatter->format(logger, level, event);
         }
