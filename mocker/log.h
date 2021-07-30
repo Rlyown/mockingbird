@@ -15,8 +15,10 @@
 #include <ostream>
 #include <cstdarg>
 #include <map>
+
 #include <mocker/util.h>
 #include <mocker/singleton.h>
+#include <mocker/mutex.h>
 
 
 namespace mocker {
@@ -108,6 +110,7 @@ namespace mocker {
         friend class Logger;
     public:
         typedef std::shared_ptr<LogAppender> ptr;
+        typedef Mutex MutexType;
 
         LogAppender(LogLevel::Level level = LogLevel::UNKNOWN);
         virtual ~LogAppender() {}
@@ -116,7 +119,7 @@ namespace mocker {
         virtual std::string toYamlString() = 0;
 
         void setFormatter(LogFormatter::ptr val);
-        LogFormatter::ptr getFormatter() const { return m_formatter; }
+        LogFormatter::ptr getFormatter();
 
         void setLevel(LogLevel::Level level) { m_level = level; }
         LogLevel::Level getLevel() { return m_level; }
@@ -125,6 +128,7 @@ namespace mocker {
         LogLevel::Level m_level;
         bool m_hasFormatter = false;
         LogFormatter::ptr m_formatter;
+        MutexType m_mutex;
     };
 
 
@@ -132,6 +136,7 @@ namespace mocker {
         friend class LogManager;
     public:
         typedef std::shared_ptr<Logger> ptr;
+        typedef Mutex MutexType;
 
         Logger(const std::string& name = "root");
 
@@ -154,7 +159,7 @@ namespace mocker {
 
         void setFormatter(LogFormatter::ptr val);
         void setFormatter(const std::string& val);
-        LogFormatter::ptr getFormatter() const { return m_formatter; }
+        LogFormatter::ptr getFormatter();
 
         std::string toYamlString();
     private:
@@ -164,6 +169,7 @@ namespace mocker {
         LogFormatter::ptr m_formatter;
 
         ptr m_root;
+        MutexType m_mutex;
     };
 
 
@@ -209,6 +215,8 @@ namespace mocker {
 
     class LogManager {
     public:
+        typedef Mutex MutexType;
+
         LogManager();
         Logger::ptr getLogger(const std::string& name);
 
@@ -219,6 +227,7 @@ namespace mocker {
     private:
         std::map<std::string, Logger::ptr> m_loggers;
         Logger::ptr m_root;
+        MutexType m_mutex;
     };
 
     typedef Singleton<LogManager> LoggerMgr;

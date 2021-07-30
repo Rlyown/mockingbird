@@ -4,6 +4,6 @@
 cmake-build-remote
 
 /bin
-!bin/conf
+!conf
 
 

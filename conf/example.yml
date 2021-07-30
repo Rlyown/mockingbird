@@ -5,7 +5,7 @@ logs:
     appenders:
       - type: FileLogAppender
         level: error
-        file: root.log
+        file: mutex.log
       - type: StdoutLogAppender
   - name: system
     level: debug

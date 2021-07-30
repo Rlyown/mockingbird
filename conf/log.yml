@@ -1,0 +1,17 @@
+logs:
+  - name: root
+    level: INFO
+#    formatter: "%d%T%c%T%m%n"
+    appenders:
+      - type: FileLogAppender
+#        level: error
+        file: mutex.log
+#      - type: StdoutLogAppender
+#  - name: system
+#    level: debug
+#    formatter: "%d%T%c%T[%p]%T%m%n"
+#    appenders:
+#      - type: FileLogAppender
+#        file: system.log
+#      - type: StdoutLogAppender
+#        formatter: "%d%T%c%T[%p]<%l>%T%m%n"

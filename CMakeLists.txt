@@ -14,7 +14,7 @@ set(LIB_SRC
         mocker/log.cpp
         mocker/util.cpp
         mocker/config.cpp
-        mocker/thread.cpp)
+        mocker/thread.cpp mocker/mutex.cpp)
 
 add_library(mocker SHARED ${LIB_SRC})
 force_redefine_file_macro_for_sources(mocker)  # __FILE__

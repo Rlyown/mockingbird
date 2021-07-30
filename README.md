@@ -17,6 +17,7 @@
 ├── README.md
 ├── bin                          
 ├── cmake                       -- cmake function file
+├── conf                        -- configuration
 ├── docker-compose.yml          -- compile env
 ├── lib                         -- lib output
 ├── src                         -- project resource
