@@ -24,7 +24,11 @@ int main(int argc, char *argv[]) {
 //
 //    MOCKER_LOG_DEBUG(logger) << "Hello mocker log";
 //
-    MOCKER_LOG_ERROR(MOCKER_LOG_NAME("root")) << "THis a 3rr0R";
+    MOCKER_LOG_DEBUG(MOCKER_LOG_NAME("root")) << "THis a debug";
+    MOCKER_LOG_INFO(MOCKER_LOG_NAME("root")) << "THis a info";
+    MOCKER_LOG_WARN(MOCKER_LOG_NAME("root")) << "THis a warning";
+    MOCKER_LOG_ERROR(MOCKER_LOG_NAME("root")) << "THis a error";
+    MOCKER_LOG_FATAL(MOCKER_LOG_NAME("root")) << "THis a fatal";
 //
 //    MOCKER_LOG_FMT_WARN(logger, "WARN happened in %d 0x%X", 12, 15);
 //

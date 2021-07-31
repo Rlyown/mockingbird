@@ -333,7 +333,7 @@ namespace mocker {
                 // return boost::lexical_cast<std::string>(m_val);
                 return ToStr()(getValue());
             } catch (std::exception &e) {
-                MOCKER_LOG_ERROR(MOCKER_LOG_ROOT()) << "ConfigVar::toString exception"
+                MOCKER_LOG_ERROR(MOCKER_LOG_ROOT()) << "ConfigVar::ToString exception"
                                                     << e.what() << " convert: " << typeid(m_val).name() << " to string";
             }
             return "";
@@ -345,7 +345,7 @@ namespace mocker {
                 setValue(FromStr()(val));
                 return true;
             } catch (std::exception &e) {
-                MOCKER_LOG_ERROR(MOCKER_LOG_ROOT()) << "ConfigVar::fromString exception"
+                MOCKER_LOG_ERROR(MOCKER_LOG_ROOT()) << "ConfigVar::FromString exception"
                                                     << e.what() << " convert: string to " << typeid(m_val).name();
                 return false;
             }
@@ -414,7 +414,7 @@ namespace mocker {
         typedef RWMutex RWMutexType;
 
         /**
-         * Look up a config variable. If it doesn't exist, lookup will create it.
+         * Look up a config variable. If it doesn't exist, Lookup will create it.
          * @tparam T
          * @param name
          * @param default_value
@@ -422,13 +422,13 @@ namespace mocker {
          * @return
          */
         template<class T>
-        static typename ConfigVar<T>::ptr lookup(const std::string &name,
+        static typename ConfigVar<T>::ptr Lookup(const std::string &name,
                                                  const T &default_value,
                                                  const std::string &description = "") {
             {
-                RWMutexType::ReadLock lock(getRWMutex());
-                auto it = getData().find(name);
-                if (it != getData().end()) {
+                RWMutexType::ReadLock lock(GetRWMutex());
+                auto it = GetData().find(name);
+                if (it != GetData().end()) {
                     auto tmp = std::dynamic_pointer_cast<ConfigVar<T>>(it->second);
                     if (tmp) {
                         MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "Lookup name=" << name << " exists";
@@ -449,8 +449,8 @@ namespace mocker {
 
             typename ConfigVar<T>::ptr v(new ConfigVar<T>(name, default_value, description));
             {
-                RWMutexType::WriteLock lock(getRWMutex());
-                getData()[name] = v;
+                RWMutexType::WriteLock lock(GetRWMutex());
+                GetData()[name] = v;
             }
             return v;
         }
@@ -462,36 +462,36 @@ namespace mocker {
          * @return
          */
         template<class T>
-        static typename ConfigVar<T>::ptr lookup(const std::string &name) {
-            RWMutexType::ReadLock lock(getRWMutex());
-            auto it = getData().find(name);
-            if (it == getData().end()) {
+        static typename ConfigVar<T>::ptr Lookup(const std::string &name) {
+            RWMutexType::ReadLock lock(GetRWMutex());
+            auto it = GetData().find(name);
+            if (it == GetData().end()) {
                 return nullptr;
             }
             return std::dynamic_pointer_cast<ConfigVar<T>>(it->second);
         }
 
-        static void loadFromYaml(const YAML::Node &root);
-        static ConfigVarBase::ptr lookupBase(const std::string &name);
+        static void LoadFromYaml(const YAML::Node &root);
+        static ConfigVarBase::ptr LookupBase(const std::string &name);
 
-        static void visit(const std::function<void(ConfigVarBase::ptr)>& cb);
+        static void Visit(const std::function<void(ConfigVarBase::ptr)>& cb);
 
     private:
         /**
          * The reason why the static member s_data is not directly defined
          * here is because the order of initialization cannot be guaranteed
          * when the memory is initialized. Therefore, when other static
-         * members call lookup for initialization, there may be cases where
+         * members call Lookup for initialization, there may be cases where
          * s_data has not been initialized. So use a static function to
          * encapsulate to ensure that s_data has been initialized when calling.
          * @return s_data
          */
-        static ConfigVarMap &getData() {
+        static ConfigVarMap &GetData() {
             static ConfigVarMap s_data;
             return s_data;
         }
 
-        static RWMutexType &getRWMutex() {
+        static RWMutexType &GetRWMutex() {
             static RWMutexType s_rwmutex;
             return s_rwmutex;
         }

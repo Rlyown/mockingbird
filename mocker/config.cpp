@@ -11,13 +11,13 @@ namespace mocker {
     ////////////////////////////////////////////////////////////////////
     /// Config
     ///////////////////////////////////////////////////////////////////
-    ConfigVarBase::ptr Config::lookupBase(const std::string &name) {
-        RWMutexType::ReadLock lock(getRWMutex());
-        auto it = getData().find(name);
-        return it == getData().end() ? nullptr : it->second;
+    ConfigVarBase::ptr Config::LookupBase(const std::string &name) {
+        RWMutexType::ReadLock lock(GetRWMutex());
+        auto it = GetData().find(name);
+        return it == GetData().end() ? nullptr : it->second;
     }
 
-    static void listAllMember(const std::string& prefix,
+    static void ListAllMember(const std::string& prefix,
                               const YAML::Node& node,
                               std::list<std::pair<std::string, const YAML::Node>>& output) {
 
@@ -31,15 +31,15 @@ namespace mocker {
 
         if (node.IsMap()) {
             for (auto it = node.begin(); it != node.end(); ++it) {
-                listAllMember(prefix.empty() ? it->first.Scalar() : prefix + "." + it->first.Scalar(),
+                ListAllMember(prefix.empty() ? it->first.Scalar() : prefix + "." + it->first.Scalar(),
                               it->second, output);
             }
         }
     }
 
-    void Config::loadFromYaml(const YAML::Node &root) {
+    void Config::LoadFromYaml(const YAML::Node &root) {
         std::list<std::pair<std::string, const YAML::Node>> all_nodes;
-        listAllMember("", root, all_nodes);
+        ListAllMember("", root, all_nodes);
 
         for (auto& i : all_nodes) {
             std::string key = i.first;
@@ -48,7 +48,7 @@ namespace mocker {
             }
 
             std::transform(key.begin(), key.end(), key.begin(), ::tolower);
-            ConfigVarBase::ptr var = lookupBase(key);
+            ConfigVarBase::ptr var = LookupBase(key);
 
             if (var) {
                 if (i.second.IsScalar()) {
@@ -62,9 +62,9 @@ namespace mocker {
         }
     }
 
-    void Config::visit(const std::function<void(ConfigVarBase::ptr)>& cb) {
-        RWMutexType::ReadLock lock(getRWMutex());
-        ConfigVarMap& m = getData();
+    void Config::Visit(const std::function<void(ConfigVarBase::ptr)>& cb) {
+        RWMutexType::ReadLock lock(GetRWMutex());
+        ConfigVarMap& m = GetData();
 
         for (auto & it : m) {
             cb(it.second);

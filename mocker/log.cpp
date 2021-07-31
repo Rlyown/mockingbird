@@ -61,7 +61,7 @@ namespace mocker {
     ////////////////////////////////////////////////////////////////////
     /// LogLevel
     ////////////////////////////////////////////////////////////////////
-    const char * LogLevel::toString(LogLevel::Level level) {
+    const char * LogLevel::ToString(LogLevel::Level level) {
         switch (level) {
 #define XX(name) \
         case LogLevel::name: \
@@ -82,7 +82,7 @@ namespace mocker {
 
     }
 
-    LogLevel::Level LogLevel::fromString(std::string str) {
+    LogLevel::Level LogLevel::FromString(std::string str) {
         std::transform(str.begin(), str.end(), str.begin(), toupper);
 #define XX(name) \
         if (str == #name) { \
@@ -115,7 +115,7 @@ namespace mocker {
     public:
         LevelFormatItem(const std::string&str = "") {}
         void format(std::ostream& os, Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override {
-            os << LogLevel::toString(level);
+            os << LogLevel::ToString(level);
         }
     };
 
@@ -486,7 +486,7 @@ namespace mocker {
         MutexType::Lock lock(m_mutex);
         YAML::Node node;
         node["name"] = m_name;
-        node["level"] = LogLevel::toString(m_level);
+        node["level"] = LogLevel::ToString(m_level);
 
         if (m_formatter) {
             node["formatter"] = m_formatter->getPattern();
@@ -522,12 +522,20 @@ namespace mocker {
         return m_formatter;
     }
 
-    StdoutLogAppender::StdoutLogAppender(LogLevel::Level level) : LogAppender(level) {}
+    StdoutLogAppender::StdoutLogAppender(LogLevel::Level level) : LogAppender(level) {
+        m_colors[LogLevel::UNKNOWN] = "\033[0m";
+        m_colors[LogLevel::DEBUG] = "\033[32m";
+        m_colors[LogLevel::INFO] = "\033[0m";
+        m_colors[LogLevel::WARN] = "\033[33m";
+        m_colors[LogLevel::ERROR] = "\033[31m";
+        m_colors[LogLevel::FATAL] = "\033[41m";
+        m_colors[LogLevel::REMOVED] = "\033[2m";
+    }
 
     void StdoutLogAppender::log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) {
         if (level >= m_level) {
             MutexType::Lock lock(m_mutex);
-            std::cout << m_formatter->format(logger, level, event);
+            std::cout << m_colors[level] << m_formatter->format(logger, level, event) << "\033[0m";
         }
     }
 
@@ -536,7 +544,7 @@ namespace mocker {
         YAML::Node node;
         node["type"] = "StdoutLogAppender";
         if (m_level != LogLevel::UNKNOWN)
-            node["level"] = LogLevel::toString(m_level);
+            node["level"] = LogLevel::ToString(m_level);
         if (m_formatter && m_hasFormatter) {
             node["formatter"] = m_formatter->getPattern();
         }
@@ -573,7 +581,7 @@ namespace mocker {
         node["type"] = "FileLogAppender";
         node["file"] = m_filename;
         if (m_level != LogLevel::UNKNOWN) {
-            node["level"] = LogLevel::toString(m_level);
+            node["level"] = LogLevel::ToString(m_level);
         }
         if (m_formatter && m_hasFormatter) {
             node["formatter"] = m_formatter->getPattern();
@@ -698,7 +706,7 @@ namespace mocker {
                 std::cout << "[MOCKER ERROR] log config error: name is null, " << node << std::endl;
             }
             logDefine.name = node["name"].as<std::string>();
-            logDefine.level = LogLevel::fromString(node["level"].IsDefined() ? node["level"].as<std::string>() : "");
+            logDefine.level = LogLevel::FromString(node["level"].IsDefined() ? node["level"].as<std::string>() : "");
             if (node["formatter"].IsDefined()) {
                 logDefine.formatter = node["formatter"].as<std::string>();
             }
@@ -713,7 +721,7 @@ namespace mocker {
                     LogAppenderDefine lad;
 
                     if (ap["level"].IsDefined()) {
-                        lad.level = LogLevel::fromString(ap["level"].as<std::string>());
+                        lad.level = LogLevel::FromString(ap["level"].as<std::string>());
                     }
 
                     if (type == "FileLogAppender") {
@@ -750,7 +758,7 @@ namespace mocker {
             std::stringstream ss;
 
             node["name"] = v.name;
-            node["level"] = LogLevel::toString(v.level);
+            node["level"] = LogLevel::ToString(v.level);
             if (!v.formatter.empty()) {
                 node["formatter"] = v.formatter;
             }
@@ -764,7 +772,7 @@ namespace mocker {
                     nap["type"] = "StdoutLogAppender";
                 }
                 if (ap.level != LogLevel::UNKNOWN) {
-                    nap["level"] = LogLevel::toString(ap.level);
+                    nap["level"] = LogLevel::ToString(ap.level);
                 }
                 if (!ap.formatter.empty()) {
                     nap["formatter"] = ap.formatter;
@@ -779,7 +787,7 @@ namespace mocker {
 
     // log global config variable
     ConfigVar<std::set<LogDefine>>::ptr g_log_defines =
-            Config::lookup("logs", std::set<LogDefine>(), "logs config");
+            Config::Lookup("logs", std::set<LogDefine>(), "logs config");
 
     struct LogIniter {
         LogIniter() {

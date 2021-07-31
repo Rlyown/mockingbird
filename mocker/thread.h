@@ -26,9 +26,9 @@ namespace mocker {
 
         void join();
 
-        static Thread* getCurrent();
-        static const std::string& getCurrentName();
-        static void setCurrentName(const std::string& name);
+        static Thread* GetCurrent();
+        static const std::string& GetCurrentName();
+        static void SetCurrentName(const std::string& name);
 
     public:
         Thread(const Thread&) = delete;
@@ -36,7 +36,7 @@ namespace mocker {
         Thread& operator=(const Thread&) = delete;
 
     private:
-        static void* run(void* arg);
+        static void* Run(void* arg);
     private:
         pid_t m_id = -1;
         pthread_t m_thread = 0;

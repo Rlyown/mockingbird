@@ -16,10 +16,10 @@ mocker::RWMutex s_mutex;
 mocker::Mutex mutex;
 
 void fun1() {
-    MOCKER_LOG_INFO(g_logger) << "name: " << mocker::Thread::getCurrentName()
-        << " this.name: " << mocker::Thread::getCurrent()->getName()
-        << " id: " << mocker::getThreadId()
-        << " this.id: " << mocker::Thread::getCurrent()->getId();
+    MOCKER_LOG_INFO(g_logger) << "name: " << mocker::Thread::GetCurrentName()
+        << " this.name: " << mocker::Thread::GetCurrent()->getName()
+        << " id: " << mocker::GetThreadId()
+        << " this.id: " << mocker::Thread::GetCurrent()->getId();
 
     for (int i = 0; i < 100000; ++i) {
 //        mocker::RWMutex::WriteLock lock(s_mutex);
@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
     double timeuse;
 
     YAML::Node root = YAML::LoadFile("../conf/log.yml");
-    mocker::Config::loadFromYaml(root);
+    mocker::Config::LoadFromYaml(root);
     MOCKER_LOG_INFO(g_logger) << "thread test begin";
     std::vector<mocker::Thread::ptr> thrs;
 

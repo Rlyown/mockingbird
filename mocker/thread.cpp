@@ -18,15 +18,15 @@ namespace mocker {
     ////////////////////////////////////////////////////////////////////
     /// Thread
     ////////////////////////////////////////////////////////////////////
-    Thread* Thread::getCurrent() {
+    Thread* Thread::GetCurrent() {
         return t_thread;
     }
 
-    const std::string & Thread::getCurrentName() {
+    const std::string & Thread::GetCurrentName() {
         return t_thread_name;
     }
 
-    void Thread::setCurrentName(const std::string &name) {
+    void Thread::SetCurrentName(const std::string &name) {
         if (t_thread) {
             t_thread->m_name = name;
         }
@@ -41,7 +41,7 @@ namespace mocker {
         } else {
             m_name = name;
         }
-        int r = pthread_create(&m_thread, nullptr, &Thread::run, this);
+        int r = pthread_create(&m_thread, nullptr, &Thread::Run, this);
 
         if (r) {
             MOCKER_LOG_ERROR(g_logger) << "pthread_create thread fail, r=" << r
@@ -70,11 +70,11 @@ namespace mocker {
         }
     }
 
-    void * Thread::run(void *arg) {
+    void * Thread::Run(void *arg) {
         auto* thread = (Thread*)arg;
         t_thread = thread;
         t_thread_name = thread->m_name;
-        thread->m_id = getThreadId();
+        thread->m_id = GetThreadId();
         // set name for thread
         pthread_setname_np(pthread_self(), thread->m_name.substr(0, 15).c_str());
 

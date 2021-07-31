@@ -10,6 +10,7 @@
 #include <mocker/mutex.h>
 #include <mocker/thread.h>
 #include <mocker/util.h>
+#include <mocker/macro.h>
 
 #endif //MOCKER_MOCKER_H
 

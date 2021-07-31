@@ -38,8 +38,8 @@ namespace mocker {
             REMOVED = 100
         };
 
-        static const char * toString(LogLevel::Level level);
-        static LogLevel::Level fromString(std::string str);
+        static const char * ToString(LogLevel::Level level);
+        static LogLevel::Level FromString(std::string str);
     };
 
 
@@ -180,6 +180,9 @@ namespace mocker {
         StdoutLogAppender(LogLevel::Level level = LogLevel::UNKNOWN);
         void log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override;  // override指明是重载的方法
         std::string toYamlString() override;
+
+    private:
+        std::map<LogLevel::Level, std::string> m_colors;
     };
 
 
@@ -239,8 +242,8 @@ namespace mocker {
 #define MOCKER_LOG_LEVEL(logger, level) \
         mocker::LogEventWrapper(logger, level, \
                 mocker::LogEvent::ptr(new mocker::LogEvent(__FILE__, __LINE__, 0, \
-                                                        mocker::getThreadId(), \
-                                                        mocker::getFiberId(), \
+                                                        mocker::GetThreadId(), \
+                                                        mocker::GetFiberId(), \
                                                         time(0), \
                                                         (logger)->getName()))).getSS()
 
@@ -254,8 +257,8 @@ namespace mocker {
 #define MOCKER_LOG_FMT_LEVEL(logger, level, fmt, ...) \
         mocker::LogEventWrapper(logger, level, \
                 mocker::LogEvent::ptr(new mocker::LogEvent(__FILE__, __LINE__, 0, \
-                                                        mocker::getThreadId(), \
-                                                        mocker::getFiberId(), \
+                                                        mocker::GetThreadId(), \
+                                                        mocker::GetFiberId(), \
                                                         time(0), \
                                                         (logger)->getName()))).getEvent()->format(fmt, __VA_ARGS__)
 

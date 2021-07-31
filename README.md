@@ -83,7 +83,7 @@ If you want to add a new LogAppender type:
         YAML::Node node;
         node["type"] = "StdoutLogAppender";
         if (m_level != LogLevel::UNKNOWN)
-            node["level"] = LogLevel::toString(m_level);
+            node["level"] = LogLevel::ToString(m_level);
         if (m_formatter && m_hasFormatter) {
             node["formatter"] = m_formatter->getPattern();
         }
@@ -191,7 +191,7 @@ public:
    int m_age = 0;
    bool m_sex = 0;
 
-   std::string toString() const {
+   std::string ToString() const {
    std::stringstream ss;
    ss << "[Person name=" << m_name
       << " age=" << m_age
@@ -247,15 +247,15 @@ Register a callback to catch the config event. It include:
 
 For example:
 ```c++
-// Call lookup to get the config from YAML
+// Call Lookup to get the config from YAML
 mocker::ConfigVar<Person>::ptr g_person =
-      mocker::Config::lookup("class.person", Person(), "system person");
+      mocker::Config::Lookup("class.person", Person(), "system person");
 
 // Set a listener to ConfigVar g_person.
 // addListener([](old, new) -> void {})
 g_person->addListener([](const Person& old_value, const Person& new_value){
-      MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "old_value=" << old_value.toString()
-      << " new_value=" << new_value.toString();
+      MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "old_value=" << old_value.ToString()
+      << " new_value=" << new_value.ToString();
 }
 ```
 
@@ -272,17 +272,17 @@ and then
 // The name "system.port" corresponds to the `port` in `system` table 
 // in the yaml file 
 mocker::ConfigVar<int>::ptr g_int_value_config =
-      mocker::Config::lookup("system.port", (int)8080, "system port");
+      mocker::Config::Lookup("system.port", (int)8080, "system port");
 
-// Call loadFromYaml to parse yaml file.
+// Call LoadFromYaml to parse yaml file.
 // The yaml file will change the value in `g_int_value_config`
 YAML::Node root = YAML::LoadFile("/path/to/config.yml");
-mocker::Config::loadFromYaml(root);
+mocker::Config::LoadFromYaml(root);
 
 // Get value
 g_int_value_config->getValue();
 // Get value string
-g_int_value_config->toString();
+g_int_value_config->ToString();
 ```
 
 ## Thread

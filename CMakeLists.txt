@@ -31,6 +31,7 @@ set(LIB_LIB
 mocker_build_target(test_log tests/test_log.cpp)
 mocker_build_target(test_config tests/test_config.cpp)
 mocker_build_target(test_thread tests/test_thread.cpp)
+mocker_build_target(test_util tests/test_util.cpp)
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)

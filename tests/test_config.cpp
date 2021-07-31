@@ -12,32 +12,34 @@
 
 
 mocker::ConfigVar<int>::ptr g_int_value_config =
-        mocker::Config::lookup("system.port", (int)8080, "system port");
+        mocker::Config::Lookup("system.port", (int) 8080, "system port");
 
 // type error
 //mocker::ConfigVar<float>::ptr g_int_value_error_config =
-//        mocker::Config::lookup("system.port", (float)8080, "system port");
+//        mocker::Config::Lookup("system.port", (float)8080, "system port");
 
 mocker::ConfigVar<float>::ptr g_float_value_config =
-        mocker::Config::lookup("system.value", (float)10.12f, "system port");
+        mocker::Config::Lookup("system.value", (float) 10.12f, "system port");
 
 mocker::ConfigVar<std::vector<int>>::ptr g_int_vec_value_config =
-        mocker::Config::lookup("system.int_vec", std::vector<int>{1, 2}, "system int vec");
+        mocker::Config::Lookup("system.int_vec", std::vector<int>{1, 2}, "system int vec");
 
 mocker::ConfigVar<std::list<int>>::ptr g_int_list_value_config =
-        mocker::Config::lookup("system.int_list", std::list<int>{1, 2}, "system int list");
+        mocker::Config::Lookup("system.int_list", std::list<int>{1, 2}, "system int list");
 
 mocker::ConfigVar<std::set<int>>::ptr g_int_set_value_config =
-        mocker::Config::lookup("system.int_set", std::set<int>{1, 2}, "system int set");
+        mocker::Config::Lookup("system.int_set", std::set<int>{1, 2}, "system int set");
 
 mocker::ConfigVar<std::unordered_set<int>>::ptr g_int_uset_value_config =
-        mocker::Config::lookup("system.int_uset", std::unordered_set<int>{1, 2}, "system int uset");
+        mocker::Config::Lookup("system.int_uset", std::unordered_set<int>{1, 2}, "system int uset");
 
 mocker::ConfigVar<std::map<std::string, int>>::ptr g_int_map_value_config =
-        mocker::Config::lookup("system.int_map", std::map<std::string, int>{{"a", 2}, {"b", 3}}, "system int map");
+        mocker::Config::Lookup("system.int_map", std::map<std::string, int>{{"a", 2},
+                                                                            {"b", 3}}, "system int map");
 
 mocker::ConfigVar<std::unordered_map<std::string, int>>::ptr g_int_umap_value_config =
-        mocker::Config::lookup("system.int_umap", std::unordered_map<std::string, int>{{"a", 2}, {"b", 3}}, "system int umap");
+        mocker::Config::Lookup("system.int_umap", std::unordered_map<std::string, int>{{"a", 2},
+                                                                                       {"b", 3}}, "system int umap");
 
 
 void print_yaml(const YAML::Node& node, int level) {
@@ -90,7 +92,7 @@ void test_config() {
     XX_M(g_int_umap_value_config, int_umap, brefore);
 
     YAML::Node root = YAML::LoadFile("../conf/test.yml");
-    mocker::Config::loadFromYaml(root);
+    mocker::Config::LoadFromYaml(root);
 
     MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "After: " << g_int_value_config->getValue();
     MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "After: " << g_float_value_config->getValue();
@@ -161,13 +163,13 @@ namespace mocker {
 }
 
 mocker::ConfigVar<Person>::ptr g_person =
-        mocker::Config::lookup("class.person", Person(), "system person");
+        mocker::Config::Lookup("class.person", Person(), "system person");
 
 mocker::ConfigVar<std::map<std::string, Person>>::ptr g_person_map =
-        mocker::Config::lookup("class.map", std::map<std::string, Person>(), "system person");
+        mocker::Config::Lookup("class.map", std::map<std::string, Person>(), "system person");
 
 mocker::ConfigVar<std::map<std::string, std::vector<Person>>>::ptr g_person_map_vec =
-        mocker::Config::lookup("class.map_vec", std::map<std::string, std::vector<Person>>(), "system person");
+        mocker::Config::Lookup("class.map_vec", std::map<std::string, std::vector<Person>>(), "system person");
 
 void test_class() {
     MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "before: " << g_person->getValue().toString() << " - " << g_person->toString();
@@ -191,7 +193,7 @@ void test_class() {
     MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "before: " << g_person_map_vec->toString();
 
     YAML::Node root = YAML::LoadFile("../conf/test.yml");
-    mocker::Config::loadFromYaml(root);
+    mocker::Config::LoadFromYaml(root);
 
     MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "after: " << g_person->getValue().toString() << " - " << g_person->toString();
     XX_PM(g_person_map, "class.map after");
@@ -203,7 +205,7 @@ void test_class() {
 void test_log() {
     std::cout << mocker::LoggerMgr::GetInstance()->toYamlString() << std::endl;
     YAML::Node root = YAML::LoadFile("../conf/log.yml");
-    mocker::Config::loadFromYaml(root);
+    mocker::Config::LoadFromYaml(root);
     std::cout << "===================================" << std::endl;
     std::cout << mocker::LoggerMgr::GetInstance()->toYamlString() << std::endl;
     std::cout << "===================================" << std::endl;
@@ -219,11 +221,11 @@ int main(int argc, char *argv[]) {
 //    test_class();
     test_log();
 
-    mocker::Config::visit([](mocker::ConfigVarBase::ptr var) {
+    mocker::Config::Visit([](mocker::ConfigVarBase::ptr var) {
         MOCKER_LOG_INFO(MOCKER_LOG_ROOT()) << "name=" << var->getName()
-                                  << " description=" << var->getDescription()
-                                  << " typename=" << var->getTypeName()
-                                  << " value=" << var->toString();
+                                           << " description=" << var->getDescription()
+                                           << " typename=" << var->getTypeName()
+                                           << " value=" << var->toString();
     });
     return 0;
 }
