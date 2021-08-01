@@ -6,7 +6,8 @@ include(cmake/utils.cmake)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 # enable c++ 11
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS "$ENV{CXXFLAGS} -rdynamic -O0 -g -Wall -Wno-deprecated -Werror -Wno-unused-function -Wno-dev -Wno-builtin-macro-redefined")
+set(CMAKE_CXX_FLAGS "$ENV{CXXFLAGS} -rdynamic -O0 -g -Wall -Wno-deprecated \
+    -Werror -Wno-unused-function -Wno-dev -Wno-builtin-macro-redefined")
 
 include_directories(.)
 
@@ -14,7 +15,7 @@ set(LIB_SRC
         mocker/log.cpp
         mocker/util.cpp
         mocker/config.cpp
-        mocker/thread.cpp mocker/mutex.cpp mocker/coroutine.cpp)
+        mocker/thread.cpp mocker/mutex.cpp mocker/coroutine.cpp mocker/schedule.cpp)
 
 add_library(mocker SHARED ${LIB_SRC})
 force_redefine_file_macro_for_sources(mocker)  # __FILE__

@@ -19,6 +19,7 @@
 #include <mocker/util.h>
 #include <mocker/singleton.h>
 #include <mocker/mutex.h>
+#include <mocker/thread.h>
 
 
 namespace mocker {
@@ -47,7 +48,8 @@ namespace mocker {
     public:
         typedef std::shared_ptr<LogEvent> ptr;
         LogEvent(const char * file, int32_t line, uint32_t elapse,
-                 uint32_t threadId, uint32_t fiberId, uint64_t time,
+                 uint32_t threadId, const std::string& thread_name,
+                 uint32_t fiberId, uint64_t time,
                  const std::string& logger_real_name = "");
         ~LogEvent();
 
@@ -55,7 +57,8 @@ namespace mocker {
         int32_t getLine() const { return m_line; }
         uint32_t getElapse() const { return m_elapse; }
         size_t getThreadId() const { return m_threadId; }
-        uint32_t getFiberId() const { return m_fiberId; }
+        const std::string& getThreadName() const { return m_threadName; }
+        uint32_t getCoroutineId() const { return m_coroutineId; }
         uint64_t getTime() const { return m_time; }
         std::string getContent() const { return m_ss.str(); }
         std::stringstream& getSS() { return m_ss; }
@@ -64,12 +67,13 @@ namespace mocker {
         void format(const char* fmt, ...);
         void format(const char* fmt, va_list al);
     private:
-        const char * m_file = nullptr;      // 文件名
-        int32_t m_line = 0;                 // 行号
-        uint32_t m_elapse = 0;              // 程序启动开始到现在的毫秒数
-        size_t m_threadId = 0;              // 线程id
-        uint32_t m_fiberId = 0;             // 协程id
-        uint64_t m_time = 0;                // 时间戳
+        const char * m_file = nullptr;      // file name
+        int32_t m_line = 0;                 // line number
+        uint32_t m_elapse = 0;              // time elapse from begin
+        size_t m_threadId = 0;              // thread id
+        std::string m_threadName;           // thread name
+        uint32_t m_coroutineId = 0;         // coroutine id
+        uint64_t m_time = 0;                // timestamp
         std::stringstream m_ss;
 
         std::string m_logger_real_name;
@@ -176,13 +180,14 @@ namespace mocker {
     class StdoutLogAppender: public LogAppender {
     public:
         typedef std::shared_ptr<StdoutLogAppender> ptr;
+        typedef std::map<LogLevel::Level, std::string> ColorMap;
 
         StdoutLogAppender(LogLevel::Level level = LogLevel::UNKNOWN);
         void log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override;  // override指明是重载的方法
         std::string toYamlString() override;
 
     private:
-        std::map<LogLevel::Level, std::string> m_colors;
+        static ColorMap GetColorMap();
     };
 
 
@@ -238,11 +243,11 @@ namespace mocker {
 
 }  /* namespace mocker */
 
-
 #define MOCKER_LOG_LEVEL(logger, level) \
         mocker::LogEventWrapper(logger, level, \
                 mocker::LogEvent::ptr(new mocker::LogEvent(__FILE__, __LINE__, 0, \
-                                                        mocker::GetThreadId(), \
+                                                        mocker::GetThreadId(),    \
+                                                        mocker::Thread::GetCurrentName(), \
                                                         mocker::GetCoroutineId(), \
                                                         time(0), \
                                                         (logger)->getName()))).getSS()
@@ -258,6 +263,7 @@ namespace mocker {
         mocker::LogEventWrapper(logger, level, \
                 mocker::LogEvent::ptr(new mocker::LogEvent(__FILE__, __LINE__, 0, \
                                                         mocker::GetThreadId(), \
+                                                        mocker::Thread::GetCurrentName(), \
                                                         mocker::GetCoroutineId(), \
                                                         time(0), \
                                                         (logger)->getName()))).getEvent()->format(fmt, __VA_ARGS__)

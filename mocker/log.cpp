@@ -17,10 +17,12 @@ namespace mocker {
     /// LogEvent
     ////////////////////////////////////////////////////////////////////
     LogEvent::LogEvent(const char *file, int32_t line, uint32_t elapse,
-                       uint32_t threadId, uint32_t fiberId, uint64_t time,
+                       uint32_t threadId, const std::string& thread_name,
+                       uint32_t fiberId, uint64_t time,
                        const std::string& logger_real_name)
             : m_file(file), m_line(line), m_elapse(elapse),
-              m_threadId(threadId), m_fiberId(fiberId), m_time(time),
+              m_threadId(threadId), m_threadName(thread_name),
+              m_coroutineId(fiberId), m_time(time),
               m_logger_real_name(logger_real_name) {
             if (m_logger_real_name.empty()) {
                 m_logger_real_name = "root";
@@ -147,11 +149,20 @@ namespace mocker {
     };
 
 
+    class ThreadNameFormatItem: public LogFormatter::FormatItem {
+    public:
+        ThreadNameFormatItem(const std::string&str = "") {}
+        void format(std::ostream& os, Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override {
+            os << event->getThreadName();
+        }
+    };
+
+
     class FiberIdFormatItem: public LogFormatter::FormatItem {
     public:
         FiberIdFormatItem(const std::string&str = "") {}
         void format(std::ostream& os, Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override {
-            os << event->getFiberId();
+            os << event->getCoroutineId();
         }
     };
 
@@ -328,7 +339,8 @@ namespace mocker {
                 vec.push_back(std::make_tuple(fmt_str, fmt, 1));
                 i = j - 1;  // Since the for loop will execute i++, -1 is needed here
             } else {
-//                std::cout << "[MOCKER ERROR] pattern parse error: {" << m_pattern << "} - {" << m_pattern.substr(i) << "}" << std::endl;
+//                std::cout << "\033[31m" << "[MOCKER ERROR] pattern parse error: {" <<
+//                        m_pattern << "} - {" << m_pattern.substr(i) << "}" << "\033[0m" << std::endl;
                 vec.push_back(std::make_tuple("<<pattern_error>>", fmt, 1));
                 m_error = true;
             }
@@ -344,6 +356,7 @@ namespace mocker {
          * %r -- milliseconds after start
          * %c -- log name
          * %t -- thread id
+         * %N -- thread name
          * %n -- new line
          * %d -- time
          * %f -- filename
@@ -359,6 +372,7 @@ namespace mocker {
         XX(r, ElapseFormatItem),
         XX(c, NameFormatItem),
         XX(t, ThreadIdFormatItem),
+        XX(N, ThreadNameFormatItem),
         XX(n, NewLineFormatItem),
         XX(d, DateTimeFormatItem),
         XX(f, FilenameFormatItem),
@@ -382,7 +396,8 @@ namespace mocker {
                 }
             }
 
-//            std::cout << "[MOCKER ERROR] {" << std::get<0>(i) << "} - {" << std::get<1>(i) << "} - {" << std::get<2>(i) << "}" << std::endl;
+//            std::cout << "\033[31m" << "[MOCKER ERROR] {" << std::get<0>(i) << "} - {"
+//                    << std::get<1>(i) << "} - {" << std::get<2>(i) << "}" << "\033[0m" << std::endl;
         }
     }
 
@@ -391,7 +406,7 @@ namespace mocker {
     /// Logger
     ////////////////////////////////////////////////////////////////////
     Logger::Logger(const std::string &name) : m_name(name), m_level(LogLevel::DEBUG) {
-        m_formatter.reset(new LogFormatter("%d{%Y-%m-%d %H:%M:%S}%T%t%T%F%T[%p]%T[%c]%T%f:%l%T%m%n"));
+        m_formatter.reset(new LogFormatter("%d{%Y-%m-%d %H:%M:%S}%T%t<%N>%T%F%T[%p]%T[%c]%T%f:%l%T%m%n"));
     }
 
     void Logger::log(LogLevel::Level level, LogEvent::ptr event) {
@@ -471,7 +486,8 @@ namespace mocker {
     void Logger::setFormatter(const std::string &val) {
         LogFormatter::ptr new_val(new LogFormatter(val));
         if (new_val->isError()) {
-            std::cout << "[MOCKER ERROR] Logger setFormatter name=" << m_name << " value=" << val << "invalid formatter" << std::endl;
+            std::cout << "\033[31m" << "[MOCKER ERROR] Logger setFormatter name="
+                    << m_name << " value=" << val << "invalid formatter" << "\033[0m" << std::endl;
             return;
         }
         setFormatter(new_val);
@@ -523,19 +539,13 @@ namespace mocker {
     }
 
     StdoutLogAppender::StdoutLogAppender(LogLevel::Level level) : LogAppender(level) {
-        m_colors[LogLevel::UNKNOWN] = "\033[0m";
-        m_colors[LogLevel::DEBUG] = "\033[32m";
-        m_colors[LogLevel::INFO] = "\033[0m";
-        m_colors[LogLevel::WARN] = "\033[33m";
-        m_colors[LogLevel::ERROR] = "\033[31m";
-        m_colors[LogLevel::FATAL] = "\033[41m";
-        m_colors[LogLevel::REMOVED] = "\033[2m";
+
     }
 
     void StdoutLogAppender::log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) {
         if (level >= m_level) {
             MutexType::Lock lock(m_mutex);
-            std::cout << m_colors[level] << m_formatter->format(logger, level, event) << "\033[0m";
+            std::cout << GetColorMap()[level] << m_formatter->format(logger, level, event) << "\033[0m";
         }
     }
 
@@ -551,6 +561,20 @@ namespace mocker {
         std::stringstream ss;
         ss << node;
         return ss.str();
+    }
+
+
+    StdoutLogAppender::ColorMap StdoutLogAppender::GetColorMap() {
+        static ColorMap m_colors = {
+            {LogLevel::UNKNOWN, "\033[0m"},
+            {LogLevel::DEBUG, "\033[32m"},
+            {LogLevel::INFO, "\033[0m"},
+            {LogLevel::WARN, "\033[33m"},
+            {LogLevel::ERROR, "\033[31m"},
+            {LogLevel::FATAL, "\033[41m"},
+            {LogLevel::REMOVED, "\033[2m"},
+        };
+        return m_colors;
     }
 
 
@@ -703,7 +727,8 @@ namespace mocker {
             std::stringstream ss;
             LogDefine logDefine;
             if (!node["name"].IsDefined()) {
-                std::cout << "[MOCKER ERROR] log config error: name is null, " << node << std::endl;
+                std::cout << "\033[31m" << "[MOCKER ERROR] log config error: name is null, "
+                        << node << "\033[0m" << std::endl;
             }
             logDefine.name = node["name"].as<std::string>();
             logDefine.level = LogLevel::FromString(node["level"].IsDefined() ? node["level"].as<std::string>() : "");
@@ -714,7 +739,8 @@ namespace mocker {
                 for (size_t i = 0; i < node["appenders"].size(); ++i) {
                     auto ap = node["appenders"][i];
                     if (!ap["type"].IsDefined()) {
-                        std::cout << "[MOCKER ERROR] log config error: appender type is null, " << node << std::endl;
+                        std::cout << "\033[31m" << "[MOCKER ERROR] log config error: appender type is null, "
+                                << node << "\033[0m" << std::endl;
                         continue;
                     }
                     std::string type = ap["type"].as<std::string>();
@@ -727,7 +753,8 @@ namespace mocker {
                     if (type == "FileLogAppender") {
                         lad.type = LogAppenderDefine::FileLogAppender;
                         if (!ap["file"].IsDefined()) {
-                            std::cout << "[MOCKER ERROR] log config error: FileAppender file is null, " << ap << std::endl;
+                            std::cout << "\033[31m" << "[MOCKER ERROR] log config error: FileAppender file is null, "
+                                    << ap << "\033[0m" << std::endl;
                             continue;
                         }
                         lad.file = ap["file"].as<std::string>();
@@ -740,7 +767,8 @@ namespace mocker {
                             lad.formatter = ap["formatter"].as<std::string>();
                         }
                     } else {
-                        std::cout << "[MOCKER ERROR] log config error: appender type is invalid, " << ap << std::endl;
+                        std::cout << "\033[31m" << "[MOCKER ERROR] log config error: appender type is invalid, "
+                                << ap << "\033[0m" << std::endl;
                     }
 
                     logDefine.appenders.push_back(lad);
@@ -827,10 +855,10 @@ namespace mocker {
                                                        if (!fmt->isError()) {
                                                            ap->setFormatter(fmt);
                                                        } else {
-                                                           std::cout << "[MOCKER ERROR]" << "logger name=" << i.name
+                                                           std::cout << "\033[31m" << "[MOCKER ERROR]" << "logger name=" << i.name
                                                                << " appender type=" << ad.type
                                                                << " formatter=" << ad.formatter << " is invalid"
-                                                               << std::endl;
+                                                               << "\033[0m" << std::endl;
                                                        }
                                                    }
 

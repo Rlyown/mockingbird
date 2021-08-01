@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
 
 //    mocker::Logger::ptr logger(new mocker::Logger);
 //    logger->addAppender(mocker::LogAppender::ptr (new mocker::StdoutLogAppender(mocker::LogLevel::INFO)));
-//    mocker::LogEvent::ptr logEvent(new mocker::LogEvent(__FILE__, __LINE__, 0, 0, 0, 0, "root"));
+//    mocker::LogEvent::ptr logEvent(new mocker::LogEvent(__FILE__, __LINE__, 0, 0, "main", 0, 0, "root"));
 //    logEvent->getSS() << "Hello, World!";
 //    logger->log(mocker::LogLevel::WARN, logEvent);
 

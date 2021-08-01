@@ -10,6 +10,8 @@
 
 #include <mocker/util.h>
 
+#ifndef NO_MOCKER_DEBUG
+
 #define MOCKER_ASSERT(cond) \
     if (!(cond)) {             \
         MOCKER_LOG_ERROR(MOCKER_LOG_SYSTEM()) << "ASSERTION: " #cond \
@@ -26,4 +28,12 @@
             << mocker::BacktraceToString(100, 2, "    ");            \
         assert(cond);       \
     }
+
+#else
+
+#define MOCKER_ASSERT(cond) {}
+#define MOCKER_ASSERT2(cond, msg) {}
+
+#endif //NO_MOCKER_DEBUG
+
 #endif //MOCKER_MACRO_H
