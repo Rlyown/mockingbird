@@ -14,7 +14,7 @@ set(LIB_SRC
         mocker/log.cpp
         mocker/util.cpp
         mocker/config.cpp
-        mocker/thread.cpp mocker/mutex.cpp)
+        mocker/thread.cpp mocker/mutex.cpp mocker/coroutine.cpp)
 
 add_library(mocker SHARED ${LIB_SRC})
 force_redefine_file_macro_for_sources(mocker)  # __FILE__
@@ -27,11 +27,15 @@ set(LIB_LIB
         pthread
         yaml-cpp)
 
-# add test
-mocker_build_target(test_log tests/test_log.cpp)
-mocker_build_target(test_config tests/test_config.cpp)
-mocker_build_target(test_thread tests/test_thread.cpp)
-mocker_build_target(test_util tests/test_util.cpp)
+# add test targets
+file(GLOB_RECURSE CPP_TEST_SRC_LIST tests/*.cpp)
+foreach(v ${CPP_TEST_SRC_LIST})
+    string(REGEX MATCH "tests/.*" relative_path ${v})
+    string(REGEX REPLACE "tests/" "" target_name ${relative_path})
+    string(REGEX REPLACE ".cpp" "" target_name ${target_name})
+
+    mocker_build_target(${target_name} ${relative_path})
+endforeach()
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)

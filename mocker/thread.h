@@ -16,7 +16,7 @@ namespace mocker {
     class Thread {
     public:
         typedef std::shared_ptr<Thread> ptr;
-        using task = std::function<void()>;
+        typedef std::function<void()> task;
 
         Thread(Thread::task cb, const std::string& name = "");
         ~Thread();

@@ -28,3 +28,4 @@ function(mocker_build_target targetname targetsource)
     force_redefine_file_macro_for_sources(${targetname})  # __FILE__
     target_link_libraries(${targetname} ${LIB_LIB})
 endfunction()
+

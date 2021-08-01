@@ -288,6 +288,16 @@ g_int_value_config->ToString();
 ## Thread
 Encapsulates some thread and mutex functions in pthread. `Mutex`, `Spinlock`, `RWMutex`, `CASLock` are supported.
 
+There are two `thread_local` varible in Thread. The `t_thread` is the current thread. 
+  `t_thread_name` is the name of current thread.
+
+```c++
+static thread_local Thread* t_thread;
+static thread_local std::string t_thread_name = "UNKNOWN";
+```
+
+When a thread starts to run, it will replace the `t_thread` and `t_thread_name`.
+
 ### Example
 Use Thread class to create a thread task.
 ```c++
@@ -314,4 +324,55 @@ mocker::Mutex mutex;
 
 ## Coroutine
 
+Implement with 'ucontext.h'.
 
+Every `thread` obj has a `main_coroutine`. If `thread` wants to create a new `sub_coroutine`, 
+  it need `main_coroutine` to help that.
+
+The coroutine has two global variables:
+* `s_coroutine_id` - increase automatically. Use it to assign a new coroutine's `id`.
+* `s_coroutine_count` - increase at coroutine creating and decrease at coroutine destroy. 
+  Use it to get the total number of coroutines existed in.
+```c++
+static std::atomic<uint64_t> s_coroutine_id {0};
+static std::atomic<uint64_t> s_coroutine_count {0};
+```
+
+And, two `thread_local` variables:
+* `t_coroutine` - record the current running coroutine in thread
+* `t_threadCoroutine` - record the main coroutine in thread.
+```c++
+static thread_local Coroutine* t_coroutine = nullptr;
+static thread_local Coroutine::ptr t_threadCoroutine = nullptr;
+```
+
+### Example
+You need to call the `swapIn`, `Yield` or `Sleep` manually. It will not swapIn automatically.
+
+```c++
+void run_in_coroutine() {
+    MOCKER_LOG_INFO(g_logger) << "run_in_coroutine begin";
+    mocker::Coroutine::Sleep();
+    MOCKER_LOG_INFO(g_logger) << "run_in_coroutine end";
+    mocker::Coroutine::Sleep();
+}
+
+int main(int argc, char *argv[]) {
+    /*
+     * Thread will not create main coroutine automatically.
+     * If you want to use coroutine in thread, you need to
+     * call GetCurrent to create a main coroutine at first.
+     */
+    mocker::Coroutine::GetCurrent();
+
+    MOCKER_LOG_INFO(g_logger) << "main begin";
+    mocker::Coroutine::ptr coroutine(new mocker::Coroutine(run_in_coroutine));
+    coroutine->swapIn();
+    MOCKER_LOG_INFO(g_logger) << "main after swapIn";
+    coroutine->swapIn();
+    MOCKER_LOG_INFO(g_logger) << "main after end";
+    coroutine->swapIn();
+    
+return 0;
+}
+```

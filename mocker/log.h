@@ -243,7 +243,7 @@ namespace mocker {
         mocker::LogEventWrapper(logger, level, \
                 mocker::LogEvent::ptr(new mocker::LogEvent(__FILE__, __LINE__, 0, \
                                                         mocker::GetThreadId(), \
-                                                        mocker::GetFiberId(), \
+                                                        mocker::GetCoroutineId(), \
                                                         time(0), \
                                                         (logger)->getName()))).getSS()
 
@@ -258,7 +258,7 @@ namespace mocker {
         mocker::LogEventWrapper(logger, level, \
                 mocker::LogEvent::ptr(new mocker::LogEvent(__FILE__, __LINE__, 0, \
                                                         mocker::GetThreadId(), \
-                                                        mocker::GetFiberId(), \
+                                                        mocker::GetCoroutineId(), \
                                                         time(0), \
                                                         (logger)->getName()))).getEvent()->format(fmt, __VA_ARGS__)
 

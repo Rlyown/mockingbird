@@ -6,6 +6,7 @@
 
 #include <mocker/log.h>
 #include <mocker/util.h>
+#include <mocker/coroutine.h>
 
 namespace mocker {
     static Logger::ptr g_logger = MOCKER_LOG_SYSTEM();
@@ -16,8 +17,8 @@ namespace mocker {
         return gettid();
     }
 
-    uint32_t GetFiberId() {
-        return 0;
+    uint32_t GetCoroutineId() {
+        return Coroutine::GetCoroutineId();
     }
 
 

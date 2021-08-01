@@ -11,6 +11,7 @@
 #include <mocker/thread.h>
 #include <mocker/util.h>
 #include <mocker/macro.h>
+#include <mocker/coroutine.h>
 
 #endif //MOCKER_MOCKER_H
 
