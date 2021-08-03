@@ -8,12 +8,13 @@
 #include <mocker/config.h>
 #include <mocker/macro.h>
 #include <mocker/log.h>
+#include <mocker/schedule.h>
 
 namespace mocker {
-    static std::atomic<uint64_t> s_coroutine_id {0};
-    static std::atomic<uint64_t> s_coroutine_count {0};
+    static std::atomic<uint64_t> s_coroutine_id{0};
+    static std::atomic<uint64_t> s_coroutine_count{0};
 
-    static thread_local Coroutine* t_coroutine = nullptr;
+    static thread_local Coroutine *t_coroutine = nullptr;
     static thread_local Coroutine::ptr t_threadCoroutine = nullptr;
 
     static ConfigVar<uint32_t>::ptr g_coroutine_stack_size =
@@ -25,11 +26,11 @@ namespace mocker {
 
     class MallocStackAllocator {
     public:
-        static void* Alloc(size_t size) {
+        static void *Alloc(size_t size) {
             return malloc(size);
         }
 
-        static void Dealloc(void* vp, size_t size) {
+        static void Dealloc(void *vp, size_t size) {
             return free(vp);
         }
     };
@@ -49,10 +50,10 @@ namespace mocker {
 
         ++s_coroutine_count;
 
-        MOCKER_LOG_DEBUG(g_logger) << "Coroutine::Coroutine";
+        MOCKER_LOG_DEBUG(g_logger) << "Coroutine::Coroutine id=" << m_id;
     }
 
-    Coroutine::Coroutine(Coroutine::task cb, uint32_t stacksize)
+    Coroutine::Coroutine(task cb, uint32_t stacksize, bool use_caller)
             : m_id(++s_coroutine_id), m_cb(std::move(cb)) {
         ++s_coroutine_count;
         m_stacksize = stacksize ? stacksize : g_coroutine_stack_size->getValue();
@@ -66,7 +67,11 @@ namespace mocker {
         m_ctx.uc_stack.ss_sp = m_stack;
         m_ctx.uc_stack.ss_size = m_stacksize;
 
-        makecontext(&m_ctx, &Coroutine::MainFunc, 0);
+        if (!use_caller) {
+            makecontext(&m_ctx, &Coroutine::MainFunc, 0);
+        } else {
+            makecontext(&m_ctx, &Coroutine::CallerMainFunc, 0);
+        }
 
         MOCKER_LOG_DEBUG(g_logger) << "Coroutine::Coroutine id=" << m_id;
     }
@@ -74,13 +79,14 @@ namespace mocker {
     Coroutine::~Coroutine() {
         --s_coroutine_count;
         if (m_stack) {
-            MOCKER_ASSERT(m_state == TERM || m_state == INIT || m_state == EXCEPT);
+            MOCKER_ASSERT2(m_state == TERM || m_state == INIT || m_state == EXCEPT,
+                           "m_state " + std::to_string(m_state));
             StackAllocator::Dealloc(m_stack, m_stacksize);
         } else {
             MOCKER_ASSERT(!m_cb);
             MOCKER_ASSERT(m_state == EXEC);
 
-            Coroutine* cur = t_coroutine;
+            Coroutine *cur = t_coroutine;
             if (cur == this) {
                 SetCurrent(nullptr);
             }
@@ -109,12 +115,28 @@ namespace mocker {
         SetCurrent(this);
         MOCKER_ASSERT(m_state != EXEC);
         m_state = EXEC;
-        if (swapcontext(&t_threadCoroutine->m_ctx, &m_ctx)) {
+        if (swapcontext(&Scheduler::GetMainCoroutine()->m_ctx, &m_ctx)) {
             MOCKER_ASSERT2(false, "swapcontext")
         }
     }
 
     void Coroutine::swapOut() {
+        SetCurrent(Scheduler::GetMainCoroutine());
+        if (swapcontext(&m_ctx, &Scheduler::GetMainCoroutine()->m_ctx)) {
+            MOCKER_ASSERT2(false, "swapcontext")
+        }
+    }
+
+    void Coroutine::call() {
+        SetCurrent(this);
+        MOCKER_ASSERT(m_state != EXEC);
+        m_state = EXEC;
+        if (swapcontext(&t_threadCoroutine->m_ctx, &m_ctx)) {
+            MOCKER_ASSERT2(false, "swapcontext")
+        }
+    }
+
+    void Coroutine::back() {
         SetCurrent(t_threadCoroutine.get());
         if (swapcontext(&m_ctx, &t_threadCoroutine->m_ctx)) {
             MOCKER_ASSERT2(false, "swapcontext")
@@ -159,12 +181,14 @@ namespace mocker {
             cur->m_cb();
             cur->m_cb = nullptr;
             cur->m_state = TERM;
-        } catch (std::exception& ex) {
+        } catch (std::exception &ex) {
             cur->m_state = EXCEPT;
-            MOCKER_LOG_ERROR(g_logger) << "Coroutine Exception: " << ex.what();
+            MOCKER_LOG_ERROR(g_logger) << "Coroutine Exception: " << ex.what()
+                                       << "\n" << BacktraceToString(100);
         } catch (...) {
             cur->m_state = EXCEPT;
-            MOCKER_LOG_ERROR(g_logger) << "Coroutine Exception: ";
+            MOCKER_LOG_ERROR(g_logger) << "Coroutine Exception: "
+                                       << "\n" << BacktraceToString(100);
         }
 
         /*
@@ -174,6 +198,42 @@ namespace mocker {
         auto raw_ptr = cur.get();
         cur.reset();
         raw_ptr->swapOut();
+
+        /*
+         * Here will cause a share_ptr cycle reference. Because the stack
+         * will not be deallocated, so the share_ptr count is one at least.
+         * Also, weak_ptr is useless in this situation. Because weak_ptr.lock()
+         * will create a template share_ptr, and this share_ptr can't
+         * deallocated too.
+         */
+        MOCKER_ASSERT2(false, "never reached");
+    }
+
+    void Coroutine::CallerMainFunc() {
+        Coroutine::ptr cur = GetCurrent();
+        MOCKER_ASSERT(cur);
+
+        try {
+            cur->m_cb();
+            cur->m_cb = nullptr;
+            cur->m_state = TERM;
+        } catch (std::exception &ex) {
+            cur->m_state = EXCEPT;
+            MOCKER_LOG_ERROR(g_logger) << "Coroutine Exception: " << ex.what()
+                                       << "\n" << BacktraceToString(100);
+        } catch (...) {
+            cur->m_state = EXCEPT;
+            MOCKER_LOG_ERROR(g_logger) << "Coroutine Exception: "
+                                       << "\n" << BacktraceToString(100);
+        }
+
+        /*
+         * It will not cause OOM because ~Coroutine will deallocate the
+         * whole coroutine stack.
+         */
+        auto raw_ptr = cur.get();
+        cur.reset();
+        raw_ptr->back();
 
         /*
          * Here will cause a share_ptr cycle reference. Because the stack

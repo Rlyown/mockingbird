@@ -12,10 +12,8 @@ set(CMAKE_CXX_FLAGS "$ENV{CXXFLAGS} -rdynamic -O0 -g -Wall -Wno-deprecated \
 include_directories(.)
 
 set(LIB_SRC
-        mocker/log.cpp
-        mocker/util.cpp
-        mocker/config.cpp
-        mocker/thread.cpp mocker/mutex.cpp mocker/coroutine.cpp mocker/schedule.cpp)
+        mocker/log.cpp mocker/util.cpp mocker/config.cpp mocker/thread.cpp
+        mocker/mutex.cpp mocker/coroutine.cpp mocker/schedule.cpp)
 
 add_library(mocker SHARED ${LIB_SRC})
 force_redefine_file_macro_for_sources(mocker)  # __FILE__

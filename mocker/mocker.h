@@ -5,13 +5,14 @@
 #ifndef MOCKER_MOCKER_H
 #define MOCKER_MOCKER_H
 
-#include <mocker/log.h>
 #include <mocker/config.h>
+#include <mocker/coroutine.h>
+#include <mocker/log.h>
+#include <mocker/macro.h>
 #include <mocker/mutex.h>
+#include <mocker/schedule.h>
 #include <mocker/thread.h>
 #include <mocker/util.h>
-#include <mocker/macro.h>
-#include <mocker/coroutine.h>
 
 #endif //MOCKER_MOCKER_H
 

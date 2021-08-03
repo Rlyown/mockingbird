@@ -20,7 +20,7 @@ void test_coroutine() {
     {
         mocker::Coroutine::GetCurrent();
         MOCKER_LOG_INFO(g_logger) << "main begin";
-        mocker::Coroutine::ptr coroutine(new mocker::Coroutine(run_in_coroutine));
+        mocker::Coroutine::ptr coroutine(new mocker::Coroutine(run_in_coroutine, 0, true));
         coroutine->swapIn();
         MOCKER_LOG_INFO(g_logger) << "main after swapIn";
         coroutine->swapIn();

@@ -343,6 +343,8 @@ mocker::Mutex mutex;
 
 ## Coroutine
 
+**For some design reasons, the `coroutine` module needs to be used in combination with the `scheduler`.**
+
 Implement with 'ucontext.h'.
 
 Every `thread` obj has a `main_coroutine`. If `thread` wants to create a new `sub_coroutine`, 
@@ -365,36 +367,27 @@ static thread_local Coroutine* t_coroutine = nullptr;
 static thread_local Coroutine::ptr t_threadCoroutine = nullptr;
 ```
 
-### Schedule
 
+## Scheduler
 
-### Example for Coroutine
-You need to call the `swapIn`, `Yield` or `Sleep` manually. It will not swapIn automatically.
+( Its implementation is too complicated, I still don’t fully understand. )
 
+A `scheduler` manages a group of threads. The `task` or `coroutine` is delivered to the `scheduler` 
+  through the `schedule` method, and then the `scheduler` assigns a thread to take over.
+```
+          1-M         1-N
+Scheduler ---> Thread ---> Coroutine
+```
+
+The `scheduler` implements a base class in the *schedule.h*, which needs to be expanded according to specific needs.
+
+### Example for Scheduler
 ```c++
-void run_in_coroutine() {
-    MOCKER_LOG_INFO(g_logger) << "run_in_coroutine begin";
-    mocker::Coroutine::Sleep();
-    MOCKER_LOG_INFO(g_logger) << "run_in_coroutine end";
-    mocker::Coroutine::Sleep();
-}
-
-int main(int argc, char *argv[]) {
-    /*
-     * Thread will not create main coroutine automatically.
-     * If you want to use coroutine in thread, you need to
-     * call GetCurrent to create a main coroutine at first.
-     */
-    mocker::Coroutine::GetCurrent();
-
-    MOCKER_LOG_INFO(g_logger) << "main begin";
-    mocker::Coroutine::ptr coroutine(new mocker::Coroutine(run_in_coroutine));
-    coroutine->swapIn();
-    MOCKER_LOG_INFO(g_logger) << "main after swapIn";
-    coroutine->swapIn();
-    MOCKER_LOG_INFO(g_logger) << "main after end";
-    coroutine->swapIn();
-    
-return 0;
-}
+// args -> <num of threads, use caller thread, scheduler name>
+mocker::Scheduler sc(3, false, "test");
+sc.start();
+sleep(2);
+// Use Scheduler::schedule method to add a coroutine or a task.
+sc.schedule(&test_coroutine);
+sc.stop();
 ```

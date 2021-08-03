@@ -30,18 +30,23 @@ namespace mocker {
         Coroutine();
 
     public:
-        explicit Coroutine(task cb, uint32_t stacksize = 0);
+        explicit Coroutine(task cb, uint32_t stacksize = 0, bool use_caller = false);
         ~Coroutine();
 
         // reset state from INIT, TERM
         void reset(task cb);
-        // swap to current
+        // swap to other thread's current
         void swapIn();
-        // swap from current
+        // swap from other thread's current
         void swapOut();
+        // swap to current
+        void call();
+        // swap from current
+        void back();
 
         uint64_t getId() const { return m_id; }
-
+        State getState() const { return m_state; }
+        void setState(State state) { m_state = state; }
     public:
         // set current coroutine
         static void SetCurrent(Coroutine* cort);
@@ -56,6 +61,7 @@ namespace mocker {
         static uint64_t TotalCoroutines();
 
         static void MainFunc();
+        static void CallerMainFunc();
 
         static uint64_t GetCoroutineId();
     private:
