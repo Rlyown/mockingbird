@@ -18,7 +18,7 @@ namespace mocker {
     }
 
     uint32_t GetCoroutineId() {
-        return Coroutine::GetCoroutineId();
+        return Coroutine::GetCurrentId();
     }
 
 

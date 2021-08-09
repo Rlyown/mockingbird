@@ -367,19 +367,20 @@ static thread_local Coroutine* t_coroutine = nullptr;
 static thread_local Coroutine::ptr t_threadCoroutine = nullptr;
 ```
 
-
 ## Scheduler
-
-( Its implementation is too complicated, I still don’t fully understand. )
 
 A `scheduler` manages a group of threads. The `task` or `coroutine` is delivered to the `scheduler` 
   through the `schedule` method, and then the `scheduler` assigns a thread to take over.
 ```
-          1-M         1-N
-Scheduler ---> Thread ---> Coroutine
+          1-M         1-N            1-1
+Scheduler ---> Thread ---> Coroutine ---> Callback()
 ```
 
 The `scheduler` implements a base class in the *schedule.h*, which needs to be expanded according to specific needs.
+
+### IOManager
+
+`IOManager`, based on epoll, is a derived class of the scheduler, and used to monitor IO events.
 
 ### Example for Scheduler
 ```c++

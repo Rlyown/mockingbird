@@ -3,7 +3,10 @@ version: '2.2'
 services:
   mocker:
     container_name: mocker
-    image: rlyown/cdev_host
+    # Because of Apple Silicon, I use an arm64 docker image.
+    image: rlyown/cdev_host_arm64
+    # This image's arch is x86_64.
+    # image: rlyown/cdev_host
     security_opt: # options needed for gdb debugging
       - seccomp:unconfined
       - apparmor:unconfined

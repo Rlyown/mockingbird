@@ -4,12 +4,12 @@
 
 #include <vector>
 #include <unistd.h>
-#include <sys/time.h>
+#include <sys/time.h>  /* NOLINT */
 #include <iostream>
 
 #include <mocker/mocker.h>
 
-mocker::Logger::ptr g_logger = MOCKER_LOG_ROOT();
+mocker::Logger::ptr g_logger = MOCKER_LOG_ROOT();  /* NOLINT */
 
 int count = 0;
 mocker::RWMutex s_mutex;

@@ -10,7 +10,7 @@
 #include <mocker/log.h>
 #include <mocker/macro.h>
 #include <mocker/mutex.h>
-#include <mocker/schedule.h>
+#include <mocker/scheduler.h>
 #include <mocker/thread.h>
 #include <mocker/util.h>
 

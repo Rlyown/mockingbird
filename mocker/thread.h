@@ -38,9 +38,13 @@ namespace mocker {
     private:
         static void* Run(void* arg);
     private:
+        /// thread id
         pid_t m_id = -1;
+        /// thread object
         pthread_t m_thread = 0;
+        /// callback function
         Thread::task m_cb;
+        /// thread name
         std::string m_name;
 
         Semaphore m_semaphore;

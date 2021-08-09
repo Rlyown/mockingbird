@@ -17,6 +17,7 @@ namespace mocker {
         typedef std::shared_ptr<Coroutine> ptr;
         typedef std::function<void()> task;
 
+        // Coroutine state
         enum State {
             INIT,
             READY,
@@ -63,15 +64,21 @@ namespace mocker {
         static void MainFunc();
         static void CallerMainFunc();
 
-        static uint64_t GetCoroutineId();
+        static uint64_t GetCurrentId();
     private:
+        /// Coroutine's unique id.
         uint64_t m_id = 0;
+        /// Coroutine's stack size
         uint32_t m_stacksize = 0;
+        /// Coroutine state
         State m_state = INIT;
 
+        /// Coroutine context
         ucontext_t m_ctx;
+        /// Coroutine's Stack point
         void* m_stack = nullptr;
 
+        /// Coroutine's Running task.
         task m_cb;
     };
 }

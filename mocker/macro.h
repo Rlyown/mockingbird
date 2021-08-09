@@ -8,6 +8,7 @@
 #include <cstring>
 #include <cassert>
 
+#include <mocker/log.h>
 #include <mocker/util.h>
 
 #ifndef NO_MOCKER_DEBUG
